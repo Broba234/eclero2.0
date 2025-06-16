@@ -16,7 +16,7 @@ export default function Home() {
 
     return (
         <ParallaxProvider>
-            <div
+            <motion.div
                 className="min-h-screen"
                 style={{
                     background: useTransform(
@@ -91,7 +91,7 @@ export default function Home() {
                         </motion.div>
                     </div>
                 </div>
-            </div>
+            </motion.div>
         </ParallaxProvider>
     );
 }
