@@ -1,10 +1,10 @@
 "use client";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, Suspense } from "react";
 import Link from "next/link";
 import { supabase } from '@/lib/supabaseClient' // correct
 
-export default function Register() {
+function RegisterContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const role = searchParams.get("role") || "student";
@@ -163,5 +163,13 @@ export default function Register() {
                 </button>
             </div>
         </main>
+    );
+}
+
+export default function Register() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <RegisterContent />
+        </Suspense>
     );
 }
