@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Profiles {
+  id             String   @id        // match Supabase auth.users.id
+  email          String   @unique
+  name           String
+  role           String   // student, tutor, admin
+  bio            String?
+  avatar         String?
+  subjects       String[]
+  hourlyRate     Float?
+  availability   Json?
+  isAvailableNow Boolean?
+  rating         Float?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}

@@ -1,0 +1,17 @@
+{
+  "/api/booking/cancel/route": "app/api/booking/cancel/route.js",
+  "/api/booking/create/route": "app/api/booking/create/route.js",
+  "/api/profiles/update/route": "app/api/profiles/update/route.js",
+  "/api/stripe/webhook/route": "app/api/stripe/webhook/route.js",
+  "/api/profiles/create/route": "app/api/profiles/create/route.js",
+  "/auth/reset/page": "app/auth/reset/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/auth/register/page": "app/auth/register/page.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/page": "app/page.js",
+  "/dashboard/tutor/availability/page": "app/dashboard/tutor/availability/page.js",
+  "/dashboard/tutor/profile/page": "app/dashboard/tutor/profile/page.js",
+  "/dashboard/tutor/page": "app/dashboard/tutor/page.js",
+  "/dashboard/tutor/sessions/page": "app/dashboard/tutor/sessions/page.js",
+  "/dashboard/student/page": "app/dashboard/student/page.js"
+}
