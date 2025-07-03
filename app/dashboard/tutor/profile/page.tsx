@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabaseClient";
+import SubjectSelector from "@/components/SubjectSelector";
 
 type TutorProfile = {
     firstName: string;
@@ -24,6 +26,8 @@ type TutorProfile = {
 };
 
 export default function TutorProfile() {
+    console.log("TutorProfile page loaded");
+
     const [profile, setProfile] = useState<TutorProfile>({
         firstName: "",
         lastName: "",
@@ -37,23 +41,128 @@ export default function TutorProfile() {
     });
 
     const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(true);
     const router = useRouter();
 
-    // TODO: Fetch actual profile from backend
-    // useEffect(() => {
-    //     // Fetch profile
-    // }, []);
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const {
+                    data: { user },
+                    error: sessionError,
+                } = await supabase.auth.getUser();
+
+                if (sessionError || !user) {
+                    console.error("Supabase session or user fetch error:", sessionError);
+                    router.push("/auth/login");
+                    return;
+                }
+
+                // Fetch profile data
+                const profileRes = await fetch(`/api/profiles/get-full?email=${encodeURIComponent(user.email!)}`);
+                
+                if (profileRes.ok) {
+                    const profileData = await profileRes.json();
+                    console.log('Fetched profile data:', profileData);
+                    
+                    // Split the name into first and last name
+                    const nameParts = profileData.name ? profileData.name.split(' ') : ['', ''];
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ') || '';
+                    
+                    // Parse JSON fields if they exist
+                    const education = profileData.education ? 
+                        (typeof profileData.education === 'string' ? JSON.parse(profileData.education) : profileData.education) : [];
+                    const experience = profileData.experience ? 
+                        (typeof profileData.experience === 'string' ? JSON.parse(profileData.experience) : profileData.experience) : [];
+                    
+                    // Extract subject names from the new structure
+                    const subjects = profileData.subjects ? 
+                        profileData.subjects.map((item: any) => item.subject.id) : [];
+                    
+                    setProfile(prev => ({
+                        ...prev,
+                        firstName,
+                        lastName,
+                        email: profileData.email || user.email || '',
+                        phone: profileData.phone || '',
+                        bio: profileData.bio || '',
+                        subjects: subjects,
+                        hourlyRate: profileData.hourlyRate !== null && profileData.hourlyRate !== undefined ? profileData.hourlyRate : 0,
+                        education: education,
+                        experience: experience,
+                    }));
+                }
+                
+                setLoading(false);
+            } catch (error) {
+                console.error("Error fetching profile:", error);
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            // TODO: Implement profile update
-            setMessage("Profile updated successfully!");
-            setTimeout(() => setMessage(""), 3000);
+            const {
+                data: { user },
+                error: sessionError,
+            } = await supabase.auth.getUser();
+
+            if (sessionError || !user) {
+                setMessage("Authentication error. Please log in again.");
+                return;
+            }
+
+            const requestBody = {
+                email: user.email,
+                firstName: profile.firstName,
+                lastName: profile.lastName,
+                phone: profile.phone,
+                bio: profile.bio,
+                subjects: profile.subjects,
+                hourlyRate: profile.hourlyRate,
+                education: profile.education,
+                experience: profile.experience,
+            };
+            
+            console.log('Sending profile update:', requestBody);
+
+            const response = await fetch('/api/profiles/update', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(requestBody),
+            });
+
+            if (response.ok) {
+                setMessage("Profile updated successfully!");
+                setTimeout(() => setMessage(""), 3000);
+            } else {
+                const errorData = await response.json();
+                setMessage(`Error updating profile: ${errorData.error || 'Unknown error'}`);
+            }
         } catch (error) {
+            console.error("Error updating profile:", error);
             setMessage("Error updating profile. Please try again.");
         }
     };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gray-50 py-8">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="text-center">
+                        <div className="text-lg">Loading profile...</div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
@@ -176,6 +285,21 @@ export default function TutorProfile() {
                                             className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border-gray-300 rounded-md"
                                         />
                                     </div>
+                                </div>
+
+                                <div className="sm:col-span-6">
+                                    <label htmlFor="subjects" className="block text-sm font-medium text-gray-700">
+                                        Subjects
+                                    </label>
+                                    <div className="mt-1">
+                                        <SubjectSelector
+                                            selectedSubjectIds={profile.subjects}
+                                            onSelectionChange={(ids: string[]) => setProfile({ ...profile, subjects: ids })}
+                                        />
+                                    </div>
+                                    <p className="mt-2 text-sm text-gray-500">
+                                        Select one or more subjects from the available categories.
+                                    </p>
                                 </div>
                             </div>
                         </div>

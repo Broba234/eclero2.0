@@ -8,17 +8,58 @@ datasource db {
 }
 
 model Profiles {
-  id             String   @id        // match Supabase auth.users.id
+  id             String   @id // match Supabase auth.users.id
   email          String   @unique
   name           String
-  role           String   // student, tutor, admin
+  role           String // student, tutor, admin
   bio            String?
   avatar         String?
-  subjects       String[]
+  phone          String?
   hourlyRate     Float?
   availability   Json?
   isAvailableNow Boolean?
   rating         Float?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  education      Json? // Array of education objects
+  experience     Json? // Array of experience objects
+  created_at      DateTime @default(now()) @map("created_at")
+  updated_at      DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  subjects ProfilesOnSubjects[]
+}
+
+model Subjects {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?
+  grade       Int?
+  categoryId  String
+  category    Categories @relation(fields: [categoryId], references: [id])
+  created_at  DateTime @default(now()) @map("created_at")
+  updated_at  DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  profiles    ProfilesOnSubjects[]
+}
+
+model Categories {
+  id        String   @id @default(uuid())
+  name      String
+  created_at DateTime @default(now()) @map("created_at")
+  updated_at DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  subjects  Subjects[]
+}
+
+model ProfilesOnSubjects {
+  profileId String @map("profile_id")
+  subjectId String @map("subject_id")
+  created_at DateTime @default(now()) @map("created_at")
+
+  // Relations
+  profile Profiles @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  subject Subjects @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+
+  @@id([profileId, subjectId])
 }

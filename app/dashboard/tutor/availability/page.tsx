@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type TimeSlot = {
@@ -68,7 +68,7 @@ export default function TutorAvailability() {
                                 ))}
 
                                 {TIME_SLOTS.map((time, index) => (
-                                    <>
+                                    <React.Fragment key={time}>
                                         <div key={`time-${time}`} className="text-right pr-4 text-sm text-gray-500">
                                             {time}
                                         </div>
@@ -88,7 +88,7 @@ export default function TutorAvailability() {
                                                 />
                                             );
                                         })}
-                                    </>
+                                    </React.Fragment>
                                 ))}
                             </div>
                         </div>

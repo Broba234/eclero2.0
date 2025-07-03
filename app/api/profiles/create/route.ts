@@ -1,46 +1,39 @@
-import { prisma } from '@/lib/prisma';
-import { validRoles } from '@/lib/types/roles';
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const { id, email, role, name, bio, avatar, subjects, hourlyRate, availability, isAvailableNow, rating } = await request.json();
+    const body = await req.json();
 
-    if (!id || !email || !role || !name) {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
+    console.log("[API] Received body:", body);
+
+    const { id, email, name, role } = body;
+
+    if (!id || !email || !name || !role) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
-
-    if (!validRoles.includes(role)) {
-      return new Response(JSON.stringify({ error: 'Invalid role' }), { status: 400 });
-    }
-
-    console.log('[PROFILE_CREATE] Attempting insert with:', {
-      id, email, role, name, bio, avatar, subjects, hourlyRate, availability, isAvailableNow, rating
-    });
 
     const profile = await prisma.profiles.create({
       data: {
         id,
         email,
-        role,
         name,
-        bio,
-        avatar,
-        subjects: subjects ?? [],
-        hourlyRate,
-        availability,
-        isAvailableNow,
-        rating,
-      },
+        role
+      }
     });
 
-    return new Response(JSON.stringify(profile), { status: 201 });
-  } catch (error: any) {
-    console.error('[PROFILE_CREATE FULL ERROR DUMP]');
-    console.dir(error, { depth: null });
+    console.log("[API] Profile created:", profile);
 
-    return new Response(JSON.stringify({
-      error: 'Internal Server Error',
-      details: error?.message || error
-    }), { status: 500 });
+    return NextResponse.json(profile);
+
+  } catch (error) {
+    console.error("[API] Profile creation failed:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error instanceof Error ? error.message : error },
+      { status: 500 }
+    );
   }
 }
