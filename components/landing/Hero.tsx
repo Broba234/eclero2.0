@@ -46,9 +46,11 @@ export default function Hero() {
                     {/* Main titles and descriptions - positioned higher, scroll away together */}
                     <motion.div 
                         style={{ 
-                            opacity: titleSectionOpacity
+                            opacity: titleSectionOpacity,
+                            top: "25vh",
+                            transform: "none"
                         }} 
-                        className="absolute top-1/4 left-0 right-0 flex items-center justify-center"
+                        className="absolute left-0 right-0 flex items-center justify-center"
                     >
                         <div className="grid lg:grid-cols-2 gap-16 items-start w-full max-w-7xl mx-auto px-4">
                             {/* Left side - Learn */}
