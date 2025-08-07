@@ -41,57 +41,62 @@ export default function Hero() {
                 <div className="absolute top-3/4 left-1/2 w-64 h-64 bg-white/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
             </div>
             
+            {/* Titles positioned with FIXED positioning - completely independent */}
+            <motion.div 
+                style={{ 
+                    opacity: titleSectionOpacity,
+                    position: "fixed",
+                    top: "25vh",
+                    left: "0",
+                    right: "0",
+                    zIndex: 20,
+                    transform: "none"
+                }} 
+                className="flex items-center justify-center pointer-events-none"
+            >
+                <div className="grid lg:grid-cols-2 gap-16 items-start w-full max-w-7xl mx-auto px-4">
+                    {/* Left side - Learn */}
+                    <motion.div 
+                        style={{ x: leftX }}
+                        className="text-center lg:text-left space-y-6"
+                    >
+                        <h2 className="text-5xl md:text-7xl text-white font-black leading-none">
+                            Learn <span className="bg-gradient-to-r from-cyan-400 to-blue-400 text-transparent bg-clip-text">Faster</span>
+                        </h2>
+                        <motion.div
+                            style={{ 
+                                opacity: descriptionOpacity,
+                                y: descriptionY
+                            }}
+                            className="text-blue-100 text-lg leading-relaxed max-w-md mx-auto lg:mx-0"
+                        >
+                            Connect with skilled peer tutors in our open marketplace. Get affordable, on-demand help for exams, assignments, and concept mastery.
+                        </motion.div>
+                    </motion.div>
+                    
+                    {/* Right side - Earn */}
+                    <motion.div 
+                        style={{ x: rightX }}
+                        className="text-center lg:text-right space-y-6"
+                    >
+                        <h2 className="text-5xl md:text-7xl text-white font-black leading-none">
+                            Earn <span className="bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">Smarter</span>
+                        </h2>
+                        <motion.div
+                            style={{ 
+                                opacity: descriptionOpacity,
+                                y: descriptionY
+                            }}
+                            className="text-purple-100 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 lg:ml-auto"
+                        >
+                            Monetize your knowledge by becoming a tutor. Set your schedule, your prices, and help peers succeed while earning.
+                        </motion.div>
+                    </motion.div>
+                </div>
+            </motion.div>
+
             <div ref={containerRef} className="relative h-[150vh] z-10">
                 <div className="sticky top-0 h-screen flex flex-col justify-center items-center px-4">
-                    {/* Main titles and descriptions - positioned higher, scroll away together */}
-                    <motion.div 
-                        style={{ 
-                            opacity: titleSectionOpacity,
-                            top: "25vh",
-                            transform: "none"
-                        }} 
-                        className="absolute left-0 right-0 flex items-center justify-center"
-                    >
-                        <div className="grid lg:grid-cols-2 gap-16 items-start w-full max-w-7xl mx-auto px-4">
-                            {/* Left side - Learn */}
-                            <motion.div 
-                                style={{ x: leftX }}
-                                className="text-center lg:text-left space-y-6"
-                            >
-                                <h2 className="text-5xl md:text-7xl text-white font-black leading-none">
-                                    Learn <span className="bg-gradient-to-r from-cyan-400 to-blue-400 text-transparent bg-clip-text">Faster</span>
-                                </h2>
-                                <motion.div
-                                    style={{ 
-                                        opacity: descriptionOpacity,
-                                        y: descriptionY
-                                    }}
-                                    className="text-blue-100 text-lg leading-relaxed max-w-md mx-auto lg:mx-0"
-                                >
-                                    Connect with skilled peer tutors in our open marketplace. Get affordable, on-demand help for exams, assignments, and concept mastery.
-                                </motion.div>
-                            </motion.div>
-                            
-                            {/* Right side - Earn */}
-                            <motion.div 
-                                style={{ x: rightX }}
-                                className="text-center lg:text-right space-y-6"
-                            >
-                                <h2 className="text-5xl md:text-7xl text-white font-black leading-none">
-                                    Earn <span className="bg-gradient-to-r from-purple-400 to-pink-400 text-transparent bg-clip-text">Smarter</span>
-                                </h2>
-                                <motion.div
-                                    style={{ 
-                                        opacity: descriptionOpacity,
-                                        y: descriptionY
-                                    }}
-                                    className="text-purple-100 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 lg:ml-auto"
-                                >
-                                    Monetize your knowledge by becoming a tutor. Set your schedule, your prices, and help peers succeed while earning.
-                                </motion.div>
-                            </motion.div>
-                        </div>
-                    </motion.div>
 
                     {/* Action buttons - positioned lower */}
                     <motion.div
