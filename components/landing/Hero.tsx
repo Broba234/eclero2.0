@@ -6,18 +6,18 @@ export default function Hero() {
     const containerRef = useRef(null);
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
 
-    // Title animations - stay completely stationary, then move away horizontally only
-    const leftX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.8], ["0vw", "0vw", "-0.1vw", "-100vw"]);
-    const rightX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.8], ["0vw", "0vw", "0.1vw", "100vw"]);
-    const titleSectionOpacity = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.8], [1, 1, 1, 0]);
+    // Title animations - stay completely stationary, then move away horizontally slowly (40% slower)
+    const leftX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.9], ["0vw", "0vw", "-0.1vw", "-100vw"]);
+    const rightX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.9], ["0vw", "0vw", "0.1vw", "100vw"]);
+    const titleSectionOpacity = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.85], [1, 1, 1, 0]);
     // NO Y movement - titles stay at exact same vertical position
 
     // Description animations - levitate and appear under stationary titles, then pause
-    const descriptionOpacity = useTransform(scrollYProgress, [0.1, 0.25, 0.4, 0.8], [0, 1, 1, 0]);
+    const descriptionOpacity = useTransform(scrollYProgress, [0.1, 0.25, 0.4, 0.85], [0, 1, 1, 0]);
     const descriptionY = useTransform(scrollYProgress, [0.1, 0.25], ["30px", "0px"]);
 
-    // Button animations - positioned lower, stay visible
-    const buttonY = useTransform(scrollYProgress, [0, 0.5], ["60vh", "50vh"]);
+    // Button animations - positioned higher so visible when logging in
+    const buttonY = useTransform(scrollYProgress, [0, 0.5], ["45vh", "35vh"]);
     const buttonOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8], [1, 1, 1]);
 
     return (
