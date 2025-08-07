@@ -25,51 +25,35 @@ const subjects = [
 ];
 
 async function main() {
-  console.log('Seeding SubjectCategory and Subject tables...');
+  console.log('Seeding Subjects table...');
 
-  // Get unique categories from the subjects array
-  const uniqueCategories = [...new Set(subjects.map(subject => subject.category))];
-  
-  // Create a map to store category IDs
-  const categoryMap = new Map<string, string>();
-
-  // Upsert each unique category
-  for (const categoryName of uniqueCategories) {
-    const category = await prisma.subjectCategory.upsert({
-      where: { name: categoryName },
-      update: {},
-      create: { name: categoryName }
-    });
-    
-    categoryMap.set(categoryName, category.id);
-    console.log(`Category upserted: ${categoryName} (ID: ${category.id})`);
-  }
-
-  // Upsert each subject, linking it to its category
+  // Create subjects individually, checking for existing ones first
   for (const subjectData of subjects) {
-    const categoryId = categoryMap.get(subjectData.category);
-    
-    if (!categoryId) {
-      console.error(`Category not found for subject: ${subjectData.name}`);
-      continue;
-    }
+    try {
+      // Check if subject already exists
+      const existing = await prisma.subjects.findFirst({
+        where: { name: subjectData.name }
+      });
 
-    const subject = await prisma.subject.upsert({
-      where: { name: subjectData.name },
-      update: {
-        code: subjectData.code,
-        grade: subjectData.grade,
-        categoryId: categoryId
-      },
-      create: {
-        name: subjectData.name,
-        code: subjectData.code,
-        grade: subjectData.grade,
-        categoryId: categoryId
+      if (existing) {
+        console.log(`Subject already exists: ${subjectData.name}`);
+        continue;
       }
-    });
 
-    console.log(`Subject upserted: ${subject.name} (Code: ${subject.code}, Grade: ${subject.grade}, Category: ${subjectData.category})`);
+      // Create new subject
+      const subject = await prisma.subjects.create({
+        data: {
+          name: subjectData.name,
+          code: subjectData.code,
+          grade: subjectData.grade,
+          category: subjectData.category
+        }
+      });
+
+      console.log(`Subject created: ${subject.name} (Code: ${subject.code}, Grade: ${subject.grade}, Category: ${subject.category})`);
+    } catch (error) {
+      console.error(`Error creating subject ${subjectData.name}:`, error);
+    }
   }
 
   console.log('Seeding completed successfully!');

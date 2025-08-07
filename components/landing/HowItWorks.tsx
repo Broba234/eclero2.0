@@ -17,7 +17,13 @@ const itemVariants = {
     visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-const Step = ({ icon, title, children }) => (
+interface StepProps {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+}
+
+const Step = ({ icon, title, children }: StepProps) => (
     <motion.div variants={itemVariants} className="flex items-start space-x-4">
         <div className="flex-shrink-0">
             <div className="flex items-center justify-center h-12 w-12 rounded-full bg-blue-600 text-white">

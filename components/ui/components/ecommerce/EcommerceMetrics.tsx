@@ -1,9 +1,9 @@
 import {
-  ArrowDownIcon,
-  ArrowUpIcon,
-  BoxIconLine,
-  GroupIcon,
-} from "../../icons";
+  LuArrowDown as ArrowDownIcon,
+  LuArrowUp as ArrowUpIcon,
+  LuBox as BoxIconLine,
+  LuUsers as GroupIcon,
+} from "react-icons/lu";
 import Badge from "../ui/badge/Badge";
 
 export default function EcommerceMetrics() {

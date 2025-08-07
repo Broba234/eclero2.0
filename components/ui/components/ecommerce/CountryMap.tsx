@@ -1,6 +1,5 @@
-// react plugin for creating vector maps
-import { VectorMap } from "@react-jvectormap/core";
-import { worldMill } from "@react-jvectormap/world";
+// TODO: Install @react-jvectormap/core and @react-jvectormap/world if map functionality is needed
+// Component stubbed out to avoid build errors
 
 // Define the component props
 interface CountryMapProps {
@@ -8,86 +7,32 @@ interface CountryMapProps {
 }
 
 const CountryMap: React.FC<CountryMapProps> = ({ mapColor }) => {
+  const countries = [
+    { name: "United States", visitors: "2.1K" },
+    { name: "India", visitors: "1.8K" },
+    { name: "United Kingdom", visitors: "1.2K" },
+    { name: "Sweden", visitors: "0.9K" },
+  ];
+
   return (
-    <VectorMap
-      map={worldMill}
-      backgroundColor="transparent"
-      markerStyle={{
-        initial: {
-          fill: "#465FFF",
-          r: 4, // Custom radius for markers
-        } as any, // Type assertion to bypass strict CSS property checks
-      }}
-      markersSelectable={true}
-      markers={[
-        {
-          latLng: [37.2580397, -104.657039],
-          name: "United States",
-          style: {
-            fill: "#465FFF",
-            borderWidth: 1,
-            borderColor: "white",
-            stroke: "#383f47",
-          },
-        },
-        {
-          latLng: [20.7504374, 73.7276105],
-          name: "India",
-          style: { fill: "#465FFF", borderWidth: 1, borderColor: "white" },
-        },
-        {
-          latLng: [53.613, -11.6368],
-          name: "United Kingdom",
-          style: { fill: "#465FFF", borderWidth: 1, borderColor: "white" },
-        },
-        {
-          latLng: [-25.0304388, 115.2092761],
-          name: "Sweden",
-          style: {
-            fill: "#465FFF",
-            borderWidth: 1,
-            borderColor: "white",
-            strokeOpacity: 0,
-          },
-        },
-      ]}
-      zoomOnScroll={false}
-      zoomMax={12}
-      zoomMin={1}
-      zoomAnimate={true}
-      zoomStep={1.5}
-      regionStyle={{
-        initial: {
-          fill: mapColor || "#D0D5DD",
-          fillOpacity: 1,
-          fontFamily: "Outfit",
-          stroke: "none",
-          strokeWidth: 0,
-          strokeOpacity: 0,
-        },
-        hover: {
-          fillOpacity: 0.7,
-          cursor: "pointer",
-          fill: "#465fff",
-          stroke: "none",
-        },
-        selected: {
-          fill: "#465FFF",
-        },
-        selectedHover: {},
-      }}
-      regionLabelStyle={{
-        initial: {
-          fill: "#35373e",
-          fontWeight: 500,
-          fontSize: "13px",
-          stroke: "none",
-        },
-        hover: {},
-        selected: {},
-        selectedHover: {},
-      }}
-    />
+    <div className="max-w-full overflow-x-auto">
+      <div className="min-w-[400px] p-4">
+        <div className="bg-gray-100 rounded-lg p-6 text-center">
+          <h3 className="text-lg font-medium text-gray-600 mb-4">Country Map</h3>
+          <p className="text-sm text-gray-500 mb-6">
+            Map component requires @react-jvectormap/core to be installed
+          </p>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            {countries.map((country) => (
+              <div key={country.name} className="flex justify-between items-center p-3 bg-white rounded-lg">
+                <span className="font-medium text-gray-700">{country.name}</span>
+                <span className="text-blue-600 font-semibold">{country.visitors}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 

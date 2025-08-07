@@ -1,16 +1,14 @@
-import { useEffect } from "react";
-import flatpickr from "flatpickr";
-import "flatpickr/dist/flatpickr.css";
+// TODO: Install flatpickr if advanced date picker functionality is needed
+// Component stubbed out to use native HTML date input
+
 import Label from "./Label";
-import { CalenderIcon } from "../../icons";
-import Hook = flatpickr.Options.Hook;
-import DateOption = flatpickr.Options.DateOption;
+import { LuCalendar as CalenderIcon } from "react-icons/lu";
 
 type PropsType = {
   id: string;
   mode?: "single" | "multiple" | "range" | "time";
-  onChange?: Hook | Hook[];
-  defaultDate?: DateOption;
+  onChange?: (selectedDates: Date[], dateStr: string) => void;
+  defaultDate?: string | Date;
   label?: string;
   placeholder?: string;
 };
@@ -23,22 +21,24 @@ export default function DatePicker({
   defaultDate,
   placeholder,
 }: PropsType) {
-  useEffect(() => {
-    const flatPickr = flatpickr(`#${id}`, {
-      mode: mode || "single",
-      static: true,
-      monthSelectorType: "static",
-      dateFormat: "Y-m-d",
-      defaultDate,
-      onChange,
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onChange && e.target.value) {
+      const date = new Date(e.target.value);
+      onChange([date], e.target.value);
+    }
+  };
 
-    return () => {
-      if (!Array.isArray(flatPickr)) {
-        flatPickr.destroy();
-      }
-    };
-  }, [mode, onChange, id, defaultDate]);
+  const getInputType = () => {
+    if (mode === "time") return "time";
+    if (mode === "range") return "date"; // HTML doesn't support range, fallback to date
+    return "date";
+  };
+
+  const getDefaultValue = () => {
+    if (!defaultDate) return "";
+    if (typeof defaultDate === "string") return defaultDate;
+    return defaultDate.toISOString().split("T")[0];
+  };
 
   return (
     <div>
@@ -47,7 +47,10 @@ export default function DatePicker({
       <div className="relative">
         <input
           id={id}
+          type={getInputType()}
           placeholder={placeholder}
+          defaultValue={getDefaultValue()}
+          onChange={handleChange}
           className="h-11 w-full rounded-lg border appearance-none px-4 py-2.5 text-sm shadow-theme-xs placeholder:text-gray-400 focus:outline-hidden focus:ring-3  dark:bg-gray-900 dark:text-white/90 dark:placeholder:text-white/30  bg-transparent text-gray-800 border-gray-300 focus:border-brand-300 focus:ring-brand-500/20 dark:border-gray-700  dark:focus:border-brand-800"
         />
 

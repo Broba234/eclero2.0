@@ -13,6 +13,25 @@ const toast = {
 };
 
 /**
+ * Safari browser information interface
+ */
+interface SafariInfo {
+  isSafari: boolean;
+  version: number | null;
+  isSupported: boolean;
+}
+
+/**
+ * Browser compatibility status interface
+ */
+interface CompatibilityStatus {
+  isSupported: boolean;
+  reason?: string;
+  isMobile: boolean;
+  safariInfo: SafariInfo;
+}
+
+/**
  * Browser compatibility detection utilities
  */
 export const BrowserCompatibility = {
@@ -33,7 +52,7 @@ export const BrowserCompatibility = {
   /**
    * Check Safari version and compatibility
    */
-  getSafariInfo(): { isSafari: boolean; version: number | null; isSupported: boolean } {
+  getSafariInfo(): SafariInfo {
     const userAgent = navigator.userAgent;
     const isSafari = /Safari/.test(userAgent) && !/Chrome|Chromium/.test(userAgent);
     
@@ -52,12 +71,7 @@ export const BrowserCompatibility = {
   /**
    * Get comprehensive browser compatibility status
    */
-  getCompatibilityStatus(): {
-    isSupported: boolean;
-    reason?: string;
-    isMobile: boolean;
-    safariInfo: ReturnType<typeof BrowserCompatibility.getSafariInfo>;
-  } {
+  getCompatibilityStatus(): CompatibilityStatus {
     const isMobile = this.isMobile();
     const safariInfo = this.getSafariInfo();
     const hasGetDisplayMedia = this.isGetDisplayMediaSupported();
@@ -124,8 +138,10 @@ export const startScreenShare = async (room: Room | null): Promise<boolean> => {
       throw new Error('No active room connection found');
     }
 
-    if (!room.localParticipant.isScreenShareSupported()) {
-        throw new Error('Screen sharing is not supported in this browser.');
+    // Check browser compatibility using our custom method
+    const compatibilityStatus = BrowserCompatibility.getCompatibilityStatus();
+    if (!compatibilityStatus.isSupported) {
+        throw new Error(compatibilityStatus.reason || 'Screen sharing is not supported in this browser.');
     }
 
     // This is the recommended way to start screen sharing
