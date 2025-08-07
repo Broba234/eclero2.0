@@ -25,6 +25,8 @@ export async function GET(request: Request) {
         availability: true,
         education: true,
         experience: true,
+        created_at: true,
+        updated_at: true,
         subjects: {
           select: {
             subject: {
@@ -32,8 +34,7 @@ export async function GET(request: Request) {
                 id: true,
                 name: true,
                 code: true,
-                grade: true,
-                category: true
+                grade: true
               }
             }
           }

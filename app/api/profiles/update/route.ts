@@ -4,7 +4,7 @@ import { NextRequest } from 'next/server';
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { email, firstName, lastName, phone, bio, subjects, hourlyRate, education, experience } = body;
+    const { email, firstName, lastName, name, phone, bio, subjects, hourlyRate, education, experience } = body;
 
     console.log('[PROFILE_UPDATE] Received data:', body);
 
@@ -14,8 +14,8 @@ export async function PUT(request: NextRequest) {
 
     console.log('[PROFILE_UPDATE] Updating profile for email:', email);
 
-    // Combine first and last name
-    const fullName = `${firstName || ''} ${lastName || ''}`.trim();
+    // Use name if provided, otherwise combine first and last name
+    const fullName = name || `${firstName || ''} ${lastName || ''}`.trim();
 
     // Start a transaction to handle the profile update and subject relationships
     const result = await prisma.$transaction(async (tx) => {

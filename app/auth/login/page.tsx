@@ -61,23 +61,23 @@ function LoginContent() {
                 throw new Error('Could not determine user role. Please ensure you have registered an account.');
             }
 
-            let dashboardPath = "/dashboard";
+            let homePath = "/home";
             switch (userData.role.toLowerCase()) {
                 case "student":
-                    dashboardPath = "/dashboard/student";
+                    homePath = "/home/student";
                     break;
                 case "tutor":
-                    dashboardPath = "/dashboard/tutor";
+                    homePath = "/home/tutor";
                     break;
                 case "admin":
-                    dashboardPath = "/dashboard/admin";
+                    homePath = "/home/admin";
                     break;
                 default:
-                    dashboardPath = "/dashboard";
+                    homePath = "/home";
             }
 
             console.log('[LOGIN] Success:', { userId: data.user.id });
-            router.push(dashboardPath);
+            router.push(homePath);
         } catch (err: any) {
             console.error('[LOGIN] Error:', err?.message || err, err);
             setError(err.message || "An error occurred during login");

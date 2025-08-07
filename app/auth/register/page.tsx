@@ -125,9 +125,9 @@ function RegisterContent() {
 
             console.log('[REGISTER] Step 4 completed - User signed in successfully');
 
-            // Step 5: Redirect to dashboard
-            console.log('[REGISTER] Step 5: Redirecting to dashboard');
-            router.push("/dashboard");
+                    // Step 5: Redirect to home
+        console.log('[REGISTER] Step 5: Redirecting to home');
+        router.push("/home");
 
         } catch (err: any) {
             console.error('[REGISTER] Registration failed:', err);
