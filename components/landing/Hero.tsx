@@ -6,11 +6,11 @@ export default function Hero() {
     const containerRef = useRef(null);
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
 
-    // Title animations - stay completely stationary, then move away on later scroll
+    // Title animations - stay completely stationary, then move away horizontally only
     const leftX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.8], ["0vw", "0vw", "-0.1vw", "-100vw"]);
     const rightX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.8], ["0vw", "0vw", "0.1vw", "100vw"]);
     const titleSectionOpacity = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.8], [1, 1, 1, 0]);
-    const titleSectionY = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.8], ["0vh", "0vh", "0vh", "-30vh"]);
+    // NO Y movement - titles stay at exact same vertical position
 
     // Description animations - levitate and appear under stationary titles, then pause
     const descriptionOpacity = useTransform(scrollYProgress, [0.1, 0.25, 0.4, 0.8], [0, 1, 1, 0]);
@@ -46,8 +46,7 @@ export default function Hero() {
                     {/* Main titles and descriptions - positioned higher, scroll away together */}
                     <motion.div 
                         style={{ 
-                            opacity: titleSectionOpacity, 
-                            y: titleSectionY
+                            opacity: titleSectionOpacity
                         }} 
                         className="absolute top-1/4 left-0 right-0 flex items-center justify-center"
                     >
