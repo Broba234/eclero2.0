@@ -16,8 +16,8 @@ export default function Hero() {
     const descriptionOpacity = useTransform(scrollYProgress, [0.1, 0.25, 0.4, 0.85], [0, 1, 1, 0]);
     const descriptionY = useTransform(scrollYProgress, [0.1, 0.25], ["30px", "0px"]);
 
-    // Button animations - positioned higher so visible when logging in
-    const buttonY = useTransform(scrollYProgress, [0, 0.5], ["45vh", "35vh"]);
+    // Button animations - positioned much higher for immediate visibility
+    const buttonY = useTransform(scrollYProgress, [0, 0.5], ["20vh", "15vh"]);
     const buttonOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8], [1, 1, 1]);
 
     return (
@@ -98,10 +98,17 @@ export default function Hero() {
             <div ref={containerRef} className="relative h-[150vh] z-10">
                 <div className="sticky top-0 h-screen flex flex-col justify-center items-center px-4">
 
-                    {/* Action buttons - positioned lower */}
+                    {/* Action buttons - positioned high for immediate visibility */}
                     <motion.div
-                        style={{ y: buttonY, opacity: buttonOpacity }}
-                        className="absolute bottom-0 left-0 right-0 flex flex-col items-center z-50"
+                        style={{ 
+                            opacity: buttonOpacity,
+                            position: "fixed",
+                            top: "70vh",
+                            left: "0",
+                            right: "0",
+                            zIndex: 30
+                        }}
+                        className="flex flex-col items-center"
                     >
                         <div className="flex flex-col sm:flex-row justify-center items-center gap-6 w-full max-w-4xl mx-auto px-4">
                             <a 
