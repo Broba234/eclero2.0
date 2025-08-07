@@ -6,15 +6,15 @@ export default function Hero() {
     const containerRef = useRef(null);
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
 
-    // Title animations - move away on later scroll
-    const leftX = useTransform(scrollYProgress, [0.4, 0.8], ["-0.1vw", "-100vw"]);
-    const rightX = useTransform(scrollYProgress, [0.4, 0.8], ["0.1vw", "100vw"]);
-    const titleSectionOpacity = useTransform(scrollYProgress, [0.4, 0.7], [1, 0]);
-    const titleSectionY = useTransform(scrollYProgress, [0.4, 0.7], ["0vh", "-30vh"]);
+    // Title animations - stay in place initially, then move away on later scroll
+    const leftX = useTransform(scrollYProgress, [0, 0.3, 0.5, 0.8], ["0vw", "0vw", "-0.1vw", "-100vw"]);
+    const rightX = useTransform(scrollYProgress, [0, 0.3, 0.5, 0.8], ["0vw", "0vw", "0.1vw", "100vw"]);
+    const titleSectionOpacity = useTransform(scrollYProgress, [0, 0.3, 0.5, 0.7], [1, 1, 1, 0]);
+    const titleSectionY = useTransform(scrollYProgress, [0, 0.3, 0.5, 0.7], ["0vh", "0vh", "0vh", "-30vh"]);
 
-    // Description animations - appear under titles on early scroll
-    const descriptionOpacity = useTransform(scrollYProgress, [0.1, 0.3], [0, 1]);
-    const descriptionY = useTransform(scrollYProgress, [0.1, 0.3], ["20px", "0px"]);
+    // Description animations - levitate and appear under stationary titles
+    const descriptionOpacity = useTransform(scrollYProgress, [0.1, 0.25, 0.5, 0.7], [0, 1, 1, 0]);
+    const descriptionY = useTransform(scrollYProgress, [0.1, 0.25], ["30px", "0px"]);
 
     // Button animations - positioned lower, stay visible
     const buttonY = useTransform(scrollYProgress, [0, 0.5], ["60vh", "50vh"]);
