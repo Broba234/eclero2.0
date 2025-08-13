@@ -1,119 +1,312 @@
 "use client";
 
-import React, { useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect, useMemo, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
-type TimeSlot = {
-    day: string;
-    startTime: string;
-    endTime: string;
-    isAvailable: boolean;
-};
+type ApiSlot = { dayOfWeek: number; start: string; end: string };
 
-const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const TIME_SLOTS = [
-    "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00"
+const DAYS = [
+  { label: "Mon", idx: 1 },
+  { label: "Tue", idx: 2 },
+  { label: "Wed", idx: 3 },
+  { label: "Thu", idx: 4 },
+  { label: "Fri", idx: 5 },
+  { label: "Sat", idx: 6 },
+  { label: "Sun", idx: 0 },
 ];
 
+function generateTimes(start = 7, end = 22, stepMinutes = 30) {
+  const out: string[] = [];
+  for (let h = start; h <= end; h++) {
+    for (let m = 0; m < 60; m += stepMinutes) {
+      if (h === end && m > 0) break;
+      const hh = String(h).padStart(2, '0');
+      const mm = String(m).padStart(2, '0');
+      out.push(`${hh}:${mm}`);
+    }
+  }
+  return out; // inclusive start, exclusive end in grouping logic
+}
+
+const TIMES = generateTimes(7, 22, 30);
+
+function addMinutes(t: string, minutes: number) {
+  const [h, m] = t.split(':').map(Number);
+  const total = h * 60 + m + minutes;
+  const nh = Math.floor(total / 60);
+  const nm = total % 60;
+  return `${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`;
+}
+
 export default function TutorAvailability() {
-    const [availability, setAvailability] = useState<TimeSlot[]>([]);
-    const [message, setMessage] = useState("");
-    const router = useRouter();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [timezone, setTimezone] = useState<string>('UTC');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string>('');
+  const [email, setEmail] = useState<string>('');
 
-    const handleTimeSlotToggle = (day: string, startTime: string, endTime: string) => {
-        setAvailability(prev => {
-            const existingSlot = prev.find(slot => 
-                slot.day === day && slot.startTime === startTime && slot.endTime === endTime
-            );
+  // Range helper for batch apply
+  const [rangeStart, setRangeStart] = useState<string>('09:00');
+  const [rangeEnd, setRangeEnd] = useState<string>('17:00');
 
-            if (existingSlot) {
-                return prev.filter(slot => 
-                    !(slot.day === day && slot.startTime === startTime && slot.endTime === endTime)
-                );
-            }
+  const tzOptions = useMemo(() => {
+    const sys = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const supported = (Intl as any).supportedValuesOf?.('timeZone') as string[] | undefined;
+    if (supported && supported.length) return supported;
+    return Array.from(new Set([sys, 'UTC']));
+  }, []);
 
-            return [...prev, { day, startTime, endTime, isAvailable: true }];
-        });
-    };
-
-    const handleSave = async () => {
-        try {
-            // TODO: Implement saving availability to backend
-            setMessage("Availability saved successfully!");
-            setTimeout(() => setMessage(""), 3000);
-        } catch (error) {
-            setMessage("Error saving availability. Please try again.");
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user?.email) {
+          setLoading(false);
+          return;
         }
+        setEmail(user.email);
+        const res = await fetch(`/api/tutor-availability/get?email=${encodeURIComponent(user.email)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setTimezone(data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+          // Mark all 30-min slots covered by intervals as selected
+          const next = new Set<string>();
+          (data.slots as ApiSlot[]).forEach((s) => {
+            let t = s.start;
+            while (t < s.end) {
+              next.add(`${s.dayOfWeek}-${t}`);
+              t = addMinutes(t, 30);
+            }
+          });
+          setSelected(next);
+        } else {
+          // default timezone
+          setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+        }
+      } catch (e) {
+        setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+      } finally {
+        setLoading(false);
+      }
     };
+    init();
+  }, []);
 
+  const toggleCell = (dayIdx: number, time: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      const key = `${dayIdx}-${time}`;
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
+
+  const toggleDayAll = (dayIdx: number) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      const allSelected = TIMES.every(t => next.has(`${dayIdx}-${t}`));
+      TIMES.forEach(t => {
+        const k = `${dayIdx}-${t}`;
+        if (allSelected) next.delete(k); else next.add(k);
+      });
+      return next;
+    });
+  };
+
+  const applyRangeAllDays = () => {
+    if (rangeEnd <= rangeStart) return;
+    setSelected(prev => {
+      const next = new Set(prev);
+      DAYS.forEach(({ idx }) => {
+        let t = rangeStart;
+        while (t < rangeEnd) {
+          next.add(`${idx}-${t}`);
+          t = addMinutes(t, 30);
+        }
+      });
+      return next;
+    });
+  };
+
+  const clearAll = () => setSelected(new Set());
+
+  function buildIntervals(): ApiSlot[] {
+    // For each day, merge contiguous 30-min slots
+    const out: ApiSlot[] = [];
+    DAYS.forEach(({ idx }) => {
+      const times = TIMES.filter(t => selected.has(`${idx}-${t}`));
+      if (!times.length) return;
+      // iterate groups
+      let groupStart: string | null = null;
+      let prev: string | null = null;
+      const flush = () => {
+        if (groupStart && prev) {
+          out.push({ dayOfWeek: idx, start: groupStart, end: addMinutes(prev, 30) });
+        }
+        groupStart = null;
+        prev = null;
+      };
+      for (const t of times) {
+        if (!groupStart) {
+          groupStart = t;
+          prev = t;
+        } else {
+          // check continuity with prev
+          const nextOfPrev = addMinutes(prev!, 30);
+          if (t === nextOfPrev) {
+            prev = t;
+          } else {
+            flush();
+            groupStart = t;
+            prev = t;
+          }
+        }
+      }
+      flush();
+    });
+    return out;
+  }
+
+  const save = async () => {
+    try {
+      setSaving(true);
+      const slots = buildIntervals();
+      const res = await fetch('/api/tutor-availability/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userEmail: email, timezone, slots }),
+      });
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt);
+      }
+      setMessage('Availability saved');
+      setTimeout(() => setMessage(''), 2500);
+    } catch (e: any) {
+      setMessage('Error saving availability');
+      setTimeout(() => setMessage(''), 3500);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const reload = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/tutor-availability/get?email=${encodeURIComponent(email)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTimezone(data.timezone || timezone);
+        const next = new Set<string>();
+        (data.slots as ApiSlot[]).forEach((s) => {
+          let t = s.start;
+          while (t < s.end) {
+            next.add(`${s.dayOfWeek}-${t}`);
+            t = addMinutes(t, 30);
+          }
+        });
+        setSelected(next);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="min-h-screen bg-gray-50 py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="text-center">
-                    <h1 className="text-3xl font-bold text-gray-900">Manage Your Availability</h1>
-                    <p className="mt-2 text-sm text-gray-600">
-                        Select the time slots when you're available for tutoring sessions
-                    </p>
-                </div>
-
-                <div className="mt-8">
-                    <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-                        <div className="px-4 py-5 sm:p-6">
-                            <div className="grid grid-cols-8 gap-4">
-                                <div className="col-span-1"></div>
-                                {DAYS.map(day => (
-                                    <div key={day} className="text-center font-medium text-gray-900">
-                                        {day}
-                                    </div>
-                                ))}
-
-                                {TIME_SLOTS.map((time, index) => (
-                                    <React.Fragment key={time}>
-                                        <div key={`time-${time}`} className="text-right pr-4 text-sm text-gray-500">
-                                            {time}
-                                        </div>
-                                        {DAYS.map(day => {
-                                            const isSelected = availability.some(
-                                                slot => slot.day === day && slot.startTime === time
-                                            );
-                                            return (
-                                                <button
-                                                    key={`${day}-${time}`}
-                                                    onClick={() => handleTimeSlotToggle(day, time, TIME_SLOTS[index + 1] || "19:00")}
-                                                    className={`h-8 rounded ${
-                                                        isSelected 
-                                                            ? "bg-indigo-600 hover:bg-indigo-700" 
-                                                            : "bg-gray-100 hover:bg-gray-200"
-                                                    }`}
-                                                />
-                                            );
-                                        })}
-                                    </React.Fragment>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={handleSave}
-                            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                        >
-                            Save Availability
-                        </button>
-                    </div>
-
-                    {message && (
-                        <div className="mt-4 text-center">
-                            <p className={`text-sm ${
-                                message.includes("Error") ? "text-red-600" : "text-green-600"
-                            }`}>
-                                {message}
-                            </p>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-white/90">Loading availability…</div>
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-white">Availability</h1>
+            <p className="text-gray-300 mt-1">Set your weekly recurring tutoring times.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <label className="text-gray-300 text-sm">Timezone</label>
+            <select
+              value={timezone}
+              onChange={e => setTimezone(e.target.value)}
+              className="bg-white/10 border border-white/30 text-white rounded-lg px-3 py-2 backdrop-blur-sm"
+            >
+              {tzOptions.map(tz => (
+                <option key={tz} value={tz} className="bg-gray-900">{tz}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Controls */}
+        <div className="mt-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-4 sm:p-5" style={{ boxShadow: '0 8px 32px 0 rgba(31,38,135,0.37)' }}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-gray-200 text-sm">Range</span>
+              <select value={rangeStart} onChange={e => setRangeStart(e.target.value)} className="bg-white/10 border border-white/30 text-white rounded-lg px-2 py-1">
+                {TIMES.slice(0, -1).map(t => <option key={t} value={t} className="bg-gray-900">{t}</option>)}
+              </select>
+              <span className="text-gray-400">→</span>
+              <select value={rangeEnd} onChange={e => setRangeEnd(e.target.value)} className="bg-white/10 border border-white/30 text-white rounded-lg px-2 py-1">
+                {TIMES.slice(1).map(t => <option key={t} value={t} className="bg-gray-900">{t}</option>)}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={applyRangeAllDays} className="px-3 py-2 rounded-full text-white bg-white/10 border border-white/30 hover:bg-white/20 transition">Apply to all days</button>
+              <button onClick={clearAll} className="px-3 py-2 rounded-full text-gray-200 border border-white/20 hover:bg-white/10 transition">Clear all</button>
+            </div>
+            <div className="flex-1" />
+            <div className="flex items-center gap-2">
+              <button onClick={reload} className="px-3 py-2 rounded-full text-white bg-white/10 border border-white/30 hover:bg-white/20 transition">Cancel</button>
+              <button onClick={save} disabled={saving} className="px-4 py-2 rounded-full text-white font-semibold bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 transition disabled:opacity-50">
+                {saving ? 'Saving…' : 'Save'}
+              </button>
+            </div>
+          </div>
+          {message && <div className="mt-3 text-sm text-blue-200">{message}</div>}
+        </div>
+
+        {/* Grid */}
+        <div className="mt-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-2 sm:p-4 overflow-x-auto" style={{ boxShadow: '0 8px 32px 0 rgba(31,38,135,0.37)' }}>
+          <div className="min-w-[760px]">
+            {/* Header row */}
+            <div className="grid" style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, 1fr)` }}>
+              <div />
+              {DAYS.map(d => (
+                <div key={d.idx} className="flex items-center justify-between px-2 py-2">
+                  <span className="text-gray-200 font-semibold">{d.label}</span>
+                  <button onClick={() => toggleDayAll(d.idx)} className="text-xs text-blue-300 hover:text-purple-300">All</button>
+                </div>
+              ))}
+            </div>
+
+            {/* Time rows */}
+            {TIMES.map((t, i) => (
+              <div key={t} className="grid items-center" style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, 1fr)` }}>
+                <div className="text-right pr-2 py-1 text-xs text-gray-300">{t}</div>
+                {DAYS.map(d => {
+                  const key = `${d.idx}-${t}`;
+                  const isOn = selected.has(key);
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => toggleCell(d.idx, t)}
+                      className={`h-7 m-1 rounded-lg border transition ${
+                        isOn ? 'bg-blue-600/80 border-blue-300 hover:bg-blue-600' : 'bg-white/5 border-white/15 hover:bg-white/10'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

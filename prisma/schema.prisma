@@ -8,7 +8,7 @@ datasource db {
 }
 
 model Profiles {
-  id             String   @id // match Supabase auth.users.id
+  id             String   @id @db.Uuid // match Supabase auth.users.id
   email          String   @unique
   name           String
   role           String // student, tutor, admin
@@ -28,6 +28,7 @@ model Profiles {
   subjects ProfilesOnSubjects[]
   tutorSessions   Sessions[] @relation("TutorSessions")
   studentSessions Sessions[] @relation("StudentSessions")
+  availabilitySlots TutorAvailability[] @relation("TutorAvailabilitySlots")
 }
 
 model Subjects {
@@ -73,6 +74,25 @@ model Sessions {
   student Profiles @relation("StudentSessions", fields: [student_id], references: [id], onDelete: Cascade)
 
   @@map("Sessions")
+}
+
+model TutorAvailability {
+  id          String   @id @default(uuid()) @db.Uuid
+  tutorId     String   @map("tutor_id") @db.Uuid
+  dayOfWeek   Int      @map("day_of_week") // 0=Sunday, 1=Monday, ..., 6=Saturday
+  startTime   DateTime @map("start_time") @db.Time(6)  // Using DateTime with @db.Time for TIME fields
+  endTime     DateTime @map("end_time") @db.Time(6)    // Using DateTime with @db.Time for TIME fields
+  timezone    String   @default("UTC")
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  tutor Profiles @relation("TutorAvailabilitySlots", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId])
+  @@index([dayOfWeek, startTime, endTime])
+  @@map("TutorAvailability")
 }
 
 
