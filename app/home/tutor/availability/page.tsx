@@ -50,13 +50,13 @@ export default function TutorAvailability() {
   const [rangeStart, setRangeStart] = useState<string>('09:00');
   const [rangeEnd, setRangeEnd] = useState<string>('17:00');
 
-  const ALLOWED_TZS = [
+  const ALLOWED_TZS: { value: string; label: string }[] = [
     { value: 'America/New_York', label: 'ET (Eastern)' },
     { value: 'America/Chicago', label: 'CT (Central)' },
     { value: 'America/Denver', label: 'MT (Mountain)' },
     { value: 'America/Los_Angeles', label: 'PT (Pacific)' },
     { value: 'UTC', label: 'UTC' },
-  ] as const;
+  ];
 
   function mapSystemTzToAllowed(sysTz: string | undefined): string {
     const s = sysTz || '';

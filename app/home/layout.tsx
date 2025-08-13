@@ -8,16 +8,7 @@ import TutorProfileBubble from "@/components/ui/components/UserProfile/TutorProf
 import { bookSession } from "@/lib/bookingUtils";
 
 
-// Context for opening the tutor profile modal
-export const TutorProfileModalContext = createContext<{
-  openTutorProfileModal: (tutor: any) => void;
-} | undefined>(undefined);
-
-export function useTutorProfileModal() {
-  const ctx = useContext(TutorProfileModalContext);
-  if (!ctx) throw new Error("useTutorProfileModal must be used within TutorProfileModalContext");
-  return ctx;
-}
+import { TutorProfileModalContext } from "@/components/ui/components/common/TutorProfileModalContext";
 
 export default function HomeLayout({
   children,

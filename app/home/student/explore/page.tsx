@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useContext } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { TutorProfileModalContext } from "../../layout";
+import { TutorProfileModalContext } from "@/components/ui/components/common/TutorProfileModalContext";
 import TutorProfileBubble from "@/components/ui/components/UserProfile/TutorProfileBubble";
 
 export type Subjects = {
