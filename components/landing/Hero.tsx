@@ -22,7 +22,7 @@ export default function Hero() {
 
     return (
         <motion.div
-            className="min-h-[75svh] sm:min-h-screen relative overflow-hidden"
+            className="min-h-[85svh] sm:min-h-screen relative overflow-hidden"
             style={{
                 background: useTransform(
                     scrollYProgress,
