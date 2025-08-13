@@ -82,8 +82,14 @@ export default function TutorHome() {
                 setIsAvailableNow(updatedProfile.isAvailableNow);
                 console.log('Availability updated to:', updatedProfile.isAvailableNow);
             } else {
-                const errorData = await response.text();
-                console.error('Failed to update availability:', response.status, errorData);
+                const errorText = await response.text();
+                let message = 'Failed to update availability';
+                try {
+                    const parsed = JSON.parse(errorText);
+                    message = parsed.error || message;
+                } catch {}
+                console.error('Failed to update availability:', response.status, errorText);
+                alert(message);
             }
         } catch (error) {
             console.error('Error updating availability:', error);

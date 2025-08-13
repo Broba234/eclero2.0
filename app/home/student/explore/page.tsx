@@ -67,7 +67,7 @@ const TutorSection = ({ title, tutors, loading, onBook }: { title: string; tutor
                     <span className="text-sm text-gray-300 ml-1">{tutor.rating}</span>
                   </div>
                 )}
-                {tutor.isAvailableNow === true && (
+                {(tutor as any).derivedActiveNow === true && (
                   <div className="flex items-center mt-2">
                     <span className="w-2 h-2 bg-green-400 rounded-full mr-2 inline-block"></span>
                     <span className="text-sm text-green-400">Available Now</span>
