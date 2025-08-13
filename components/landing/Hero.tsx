@@ -146,7 +146,7 @@ export default function Hero() {
                 </div>
             </div>
 
-            <div ref={containerRef} className="relative h-[200vh] z-10">
+            <div ref={containerRef} className="relative h-[130svh] sm:h-[160vh] lg:h-[200vh] z-10">
                 <div className="sticky top-0 h-[100svh] sm:h-screen flex flex-col justify-center items-center px-4">
 
                     {/* Desktop buttons - fixed until white section covers */}
