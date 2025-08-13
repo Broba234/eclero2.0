@@ -6,15 +6,15 @@ export default function Hero() {
     const containerRef = useRef(null);
     const { scrollYProgress } = useScroll({ target: containerRef, offset: ["start start", "end end"] });
 
-    // Title animations - stay completely stationary, then move away horizontally slowly (40% slower)
-    const leftX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.9], ["0vw", "0vw", "-0.1vw", "-100vw"]);
-    const rightX = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.9], ["0vw", "0vw", "0.1vw", "100vw"]);
-    const titleSectionOpacity = useTransform(scrollYProgress, [0, 0.4, 0.6, 0.85], [1, 1, 1, 0]);
+    // Title animations - extend the pause where titles remain perfectly still, then slide out later
+    const leftX = useTransform(scrollYProgress, [0, 0.7, 0.8, 0.98], ["0vw", "0vw", "-0.1vw", "-100vw"]);
+    const rightX = useTransform(scrollYProgress, [0, 0.7, 0.8, 0.98], ["0vw", "0vw", "0.1vw", "100vw"]);
+    const titleSectionOpacity = useTransform(scrollYProgress, [0, 0.75, 0.9, 0.99], [1, 1, 1, 0]);
     // NO Y movement - titles stay at exact same vertical position
 
-    // Description animations - levitate and appear under stationary titles, then pause
-    const descriptionOpacity = useTransform(scrollYProgress, [0.1, 0.25, 0.4, 0.85], [0, 1, 1, 0]);
-    const descriptionY = useTransform(scrollYProgress, [0.1, 0.25], ["30px", "0px"]);
+    // Description animations - appear earlier and remain longer during the extended pause
+    const descriptionOpacity = useTransform(scrollYProgress, [0.05, 0.2, 0.88, 0.98], [0, 1, 1, 0]);
+    const descriptionY = useTransform(scrollYProgress, [0.05, 0.2], ["30px", "0px"]);
 
     // Button animations - positioned much higher for immediate visibility
     const buttonY = useTransform(scrollYProgress, [0, 0.5], ["20vh", "15vh"]);
@@ -22,7 +22,7 @@ export default function Hero() {
 
     return (
         <motion.div
-            className="min-h-screen relative overflow-hidden"
+            className="min-h-[100svh] sm:min-h-screen relative overflow-hidden"
             style={{
                 background: useTransform(
                     scrollYProgress,
@@ -68,9 +68,10 @@ export default function Hero() {
                                 opacity: descriptionOpacity,
                                 y: descriptionY
                             }}
-                            className="text-blue-100 text-lg leading-relaxed max-w-md mx-auto lg:mx-0"
+                            className="text-blue-100 text-base md:text-lg leading-relaxed max-w-md mx-auto lg:mx-0 bg-white/10 rounded-xl p-4 backdrop-blur-sm min-h-[96px]"
                         >
-                            Connect with skilled peer tutors in our open marketplace. Get affordable, on-demand help for exams, assignments, and concept mastery.
+                            <span className="block">Connect instantly with vetted peer tutors across STEM, humanities, and languages.</span>
+                            <span className="block">Collaborate via whiteboard, screen share, and file uploads for faster exam prep.</span>
                         </motion.div>
                     </motion.div>
                     
@@ -87,18 +88,19 @@ export default function Hero() {
                                 opacity: descriptionOpacity,
                                 y: descriptionY
                             }}
-                            className="text-purple-100 text-lg leading-relaxed max-w-md mx-auto lg:mx-0 lg:ml-auto"
+                            className="text-purple-100 text-base md:text-lg leading-relaxed max-w-md mx-auto lg:mx-0 lg:ml-auto bg-white/10 rounded-xl p-4 backdrop-blur-sm min-h-[96px]"
                         >
-                            Monetize your knowledge by becoming a tutor. Set your schedule, your prices, and help peers succeed while earning.
+                            <span className="block">Turn your expertise into income with flexible scheduling and transparent payouts.</span>
+                            <span className="block">Set your rates, earn trust with verified reviews, and help learners thrive.</span>
                         </motion.div>
                     </motion.div>
                 </div>
             </motion.div>
 
-            <div ref={containerRef} className="relative h-[150vh] z-10">
-                <div className="sticky top-0 h-screen flex flex-col justify-center items-center px-4">
+            <div ref={containerRef} className="relative h-[200vh] z-10">
+                <div className="sticky top-0 h-[100svh] sm:h-screen flex flex-col justify-center items-center px-4">
 
-                    {/* Action buttons - positioned high for immediate visibility */}
+                    {/* Action buttons - fixed until white section covers */}
                     <motion.div
                         style={{ 
                             opacity: buttonOpacity,
@@ -106,7 +108,7 @@ export default function Hero() {
                             top: "70vh",
                             left: "0",
                             right: "0",
-                            zIndex: 30
+                            zIndex: 25
                         }}
                         className="flex flex-col items-center"
                     >

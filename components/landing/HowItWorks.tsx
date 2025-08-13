@@ -42,7 +42,7 @@ export default function HowItWorks() {
     const isInView = useInView(ref, { once: true, amount: 0.2 });
 
     return (
-        <section id="how-it-works" ref={ref} className="py-28 bg-gradient-to-b from-white via-gray-50 to-white flex items-center">
+        <section id="how-it-works" ref={ref} className="py-28 bg-gradient-to-b from-white via-gray-50 to-white flex items-center relative z-[60]">
             <div className="container mx-auto px-4">
                 <motion.div 
                     initial={{ opacity: 0, y: 20 }}

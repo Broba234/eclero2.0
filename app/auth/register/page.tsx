@@ -152,7 +152,7 @@ function RegisterContent() {
                     onSubmit={handleSubmit}
                     className="mt-8 space-y-5"
                 >
-                    <div className="flex gap-4">
+                    <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1">
                             <label className="font-medium text-white">First Name</label>
                             <input
