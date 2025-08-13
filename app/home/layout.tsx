@@ -42,6 +42,7 @@ export default function HomeLayout({
   const [bookingTopic, setBookingTopic] = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const openTutorProfileModal = async (tutor: any) => {
     setProfileModalOpen(true);
@@ -173,14 +174,49 @@ export default function HomeLayout({
   return (
     <TutorProfileModalContext.Provider value={{ openTutorProfileModal }}>
       <>
-        <div className="flex h-screen" style={{
+        {/* Mobile top bar */}
+        <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/10 backdrop-blur-md border-b border-white/20 px-4 py-3 flex items-center justify-between" style={{
+          boxShadow: '0 8px 32px 0 rgba(31,38,135,0.25)'
+        }}>
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
+              {userName.charAt(0).toUpperCase()}
+            </div>
+            <div className="text-white font-semibold tracking-tight">eclero</div>
+          </div>
+          <button
+            aria-label="Open sidebar menu"
+            aria-expanded={mobileMenuOpen}
+            onClick={() => setMobileMenuOpen(v => !v)}
+            className="inline-flex flex-col items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-white/40 shadow hover:bg-white"
+          >
+            <span className="block w-5 h-0.5 bg-gray-800" />
+            <span className="block w-5 h-0.5 bg-gray-800 mt-1.5" />
+            <span className="block w-5 h-0.5 bg-gray-800 mt-1.5" />
+          </button>
+        </div>
+
+        <div className="flex h-screen pt-14 lg:pt-0" style={{
           background: 'linear-gradient(to bottom, #2b3340, #23272f, #181a1b)'
         }}>
-          <HomeSidebar userRole={userRole} userName={userName} />
+          {/* Sidebar: desktop */}
+          <div className="hidden lg:block">
+            <HomeSidebar userRole={userRole} userName={userName} />
+          </div>
           <main className="flex-1 overflow-y-auto relative">
             <div className="p-6">{children}</div>
           </main>
         </div>
+
+        {/* Sidebar drawer: mobile */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden fixed inset-0 z-50">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
+            <div className="absolute top-0 left-0 h-full w-64 max-w-[85vw] shadow-2xl">
+              <HomeSidebar userRole={userRole} userName={userName} />
+            </div>
+          </div>
+        )}
         {/* Modal overlay is now outside the flex container, so sidebar is never blurred */}
         {profileModalOpen && (
           profileLoading ? (
