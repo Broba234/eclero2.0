@@ -1,17 +1,12 @@
 "use client";
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 export default function Navbar() {
     const { scrollY } = useScroll();
     const [hidden, setHidden] = useState(false);
-    const [mounted, setMounted] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     useMotionValueEvent(scrollY, "change", (latest) => {
         const previous = scrollY.getPrevious();
@@ -23,6 +18,7 @@ export default function Navbar() {
     });
 
     return (
+        <>
         <motion.nav
             variants={{
                 visible: { y: 0, x: "-50%" },
@@ -61,8 +57,8 @@ export default function Navbar() {
                 </button>
             </div>
         </motion.nav>
-        /* Mobile dropdown */
-        , menuOpen ? (
+        {/* Mobile dropdown */}
+        {menuOpen ? (
             <div className="sm:hidden fixed top-[56px] left-0 right-0 z-40 px-4">
                 <div className="mx-auto w-[95vw] max-w-xl rounded-2xl bg-white shadow-xl border border-gray-200 overflow-hidden">
                     <div className="flex flex-col p-2">
@@ -72,6 +68,7 @@ export default function Navbar() {
                     </div>
                 </div>
             </div>
-        ) : null
+        ) : null}
+        </>
     );
 }
