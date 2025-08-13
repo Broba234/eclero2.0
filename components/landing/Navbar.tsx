@@ -49,7 +49,7 @@ export default function Navbar() {
                     aria-label="Open menu"
                     aria-expanded={menuOpen}
                     onClick={() => setMenuOpen(v => !v)}
-                    className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-white/40 shadow hover:bg-white"
+                    className="inline-flex flex-col items-center justify-center w-9 h-9 rounded-full bg-white/80 border border-white/40 shadow hover:bg-white"
                 >
                     <span className="block w-5 h-0.5 bg-gray-800" />
                     <span className="block w-5 h-0.5 bg-gray-800 mt-1.5" />
