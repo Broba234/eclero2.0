@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 type ApiSlot = { dayOfWeek: number; start: string; end: string };
@@ -50,12 +50,25 @@ export default function TutorAvailability() {
   const [rangeStart, setRangeStart] = useState<string>('09:00');
   const [rangeEnd, setRangeEnd] = useState<string>('17:00');
 
-  const tzOptions = useMemo(() => {
-    const sys = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-    const supported = (Intl as any).supportedValuesOf?.('timeZone') as string[] | undefined;
-    if (supported && supported.length) return supported;
-    return Array.from(new Set([sys, 'UTC']));
-  }, []);
+  const ALLOWED_TZS = [
+    { value: 'America/New_York', label: 'ET (Eastern)' },
+    { value: 'America/Chicago', label: 'CT (Central)' },
+    { value: 'America/Denver', label: 'MT (Mountain)' },
+    { value: 'America/Los_Angeles', label: 'PT (Pacific)' },
+    { value: 'UTC', label: 'UTC' },
+  ] as const;
+
+  function mapSystemTzToAllowed(sysTz: string | undefined): string {
+    const s = sysTz || '';
+    const map: { re: RegExp; target: string }[] = [
+      { re: /^America\/(New_York|Toronto|Detroit|Montreal|Nassau|Indiana|Kentucky|Louisville)/, target: 'America/New_York' },
+      { re: /^America\/(Chicago|Winnipeg|Mexico_City|Guatemala|Belize)/, target: 'America/Chicago' },
+      { re: /^America\/(Denver|Phoenix|Edmonton)/, target: 'America/Denver' },
+      { re: /^America\/(Los_Angeles|Vancouver|Tijuana)/, target: 'America/Los_Angeles' },
+    ];
+    for (const m of map) if (m.re.test(s)) return m.target;
+    return 'UTC';
+  }
 
   useEffect(() => {
     const init = async () => {
@@ -69,7 +82,13 @@ export default function TutorAvailability() {
         const res = await fetch(`/api/tutor-availability/get?email=${encodeURIComponent(user.email)}`);
         if (res.ok) {
           const data = await res.json();
-          setTimezone(data.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+          const savedTz: string | undefined = data.timezone;
+          const allowedValues = ALLOWED_TZS.map(t => t.value);
+          if (savedTz && allowedValues.includes(savedTz)) {
+            setTimezone(savedTz);
+          } else {
+            setTimezone(mapSystemTzToAllowed(Intl.DateTimeFormat().resolvedOptions().timeZone));
+          }
           // Mark all 30-min slots covered by intervals as selected
           const next = new Set<string>();
           (data.slots as ApiSlot[]).forEach((s) => {
@@ -81,11 +100,10 @@ export default function TutorAvailability() {
           });
           setSelected(next);
         } else {
-          // default timezone
-          setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+          setTimezone(mapSystemTzToAllowed(Intl.DateTimeFormat().resolvedOptions().timeZone));
         }
       } catch (e) {
-        setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+        setTimezone(mapSystemTzToAllowed(Intl.DateTimeFormat().resolvedOptions().timeZone));
       } finally {
         setLoading(false);
       }
@@ -236,8 +254,8 @@ export default function TutorAvailability() {
               onChange={e => setTimezone(e.target.value)}
               className="bg-white/10 border border-white/30 text-white rounded-lg px-3 py-2 backdrop-blur-sm"
             >
-              {tzOptions.map(tz => (
-                <option key={tz} value={tz} className="bg-gray-900">{tz}</option>
+              {ALLOWED_TZS.map(tz => (
+                <option key={tz.value} value={tz.value} className="bg-gray-900">{tz.label}</option>
               ))}
             </select>
           </div>
