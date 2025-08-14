@@ -312,10 +312,10 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
 
   return (
     <div className="relative h-full w-full">
-      {/* Whiteboard/file/screen content within a 0.75in bezel */}
+      {/* Whiteboard/file/screen content within a smaller bezel */}
       <div
         className="absolute rounded-3xl overflow-hidden bg-white shadow-2xl"
-        style={{ top: '0.75in', right: '0.75in', bottom: '0.75in', left: '0.75in' }}
+        style={{ top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' }}
       >
         {activeView === 'whiteboard' && <CollaborativeWhiteboard sendData={sendData} editorRef={editorRef} />}
         {activeView === 'file' && sharedFile && <FileViewer file={sharedFile} />}
@@ -324,12 +324,42 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
 
       {/* Top-right view toggles */}
       <div className="absolute top-4 right-4 flex items-center gap-2">
-        <button onClick={() => setActiveView('whiteboard')} className={`px-3 py-2 rounded-2xl backdrop-blur shadow-lg border ${activeView==='whiteboard' ? 'bg-blue-600/80 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}>Whiteboard</button>
+        <button
+          onClick={() => setActiveView('whiteboard')}
+          aria-label="Whiteboard"
+          title="Whiteboard"
+          className={`p-2.5 rounded-2xl backdrop-blur shadow-lg border transition-colors ${activeView==='whiteboard' ? 'bg-blue-600/90 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+          </svg>
+        </button>
         {sharedFile && (
-          <button onClick={() => setActiveView('file')} className={`px-3 py-2 rounded-2xl backdrop-blur shadow-lg border ${activeView==='file' ? 'bg-blue-600/80 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}>File</button>
+          <button
+            onClick={() => setActiveView('file')}
+            aria-label="File"
+            title="File"
+            className={`p-2.5 rounded-2xl backdrop-blur shadow-lg border transition-colors ${activeView==='file' ? 'bg-blue-600/90 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <path d="M14 2v6h6" />
+            </svg>
+          </button>
         )}
         {screenTrackRef && (
-          <button onClick={() => setActiveView('screen')} className={`px-3 py-2 rounded-2xl backdrop-blur shadow-lg border ${activeView==='screen' ? 'bg-blue-600/80 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}>Screen</button>
+          <button
+            onClick={() => setActiveView('screen')}
+            aria-label="Screen"
+            title="Screen"
+            className={`p-2.5 rounded-2xl backdrop-blur shadow-lg border transition-colors ${activeView==='screen' ? 'bg-blue-600/90 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <path d="M8 21h8m-4-4v4" />
+            </svg>
+          </button>
         )}
       </div>
 
@@ -338,18 +368,48 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
 
       {/* Bottom center toolbar */}
       <div className="absolute left-1/2 -translate-x-1/2 bottom-4 flex items-center gap-3">
-        <button onClick={() => fileInputRef.current?.click()} disabled={isSending} className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-lg disabled:opacity-50">Share File</button>
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isSending}
+          aria-label="Share file"
+          title="Share file"
+          className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-lg disabled:opacity-50"
+        >
+          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M16 16v6m-4-2h8" />
+            <path d="M21.44 11.05A5 5 0 0 0 17 7h-1.26A8 8 0 1 0 12 21" />
+          </svg>
+        </button>
         <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
         <button 
           onClick={isScreenSharing ? handleStopScreenShare : handleStartScreenShare} 
           disabled={isSending || !compatibilityStatus.isSupported}
-          className={`px-4 py-2 rounded-2xl border backdrop-blur shadow-lg ${isScreenSharing ? 'bg-red-600/90 text-white border-red-300 hover:bg-red-600' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'} disabled:opacity-50`}
-          title={compatibilityStatus.isSupported ? (isScreenSharing ? 'Click to stop screen sharing' : 'Click to share your screen. You may be prompted to grant permission.') : (compatibilityStatus.reason || 'Screen sharing is not supported.')}
+          aria-label={isScreenSharing ? 'Stop sharing' : 'Share screen'}
+          title={compatibilityStatus.isSupported ? (isScreenSharing ? 'Stop sharing' : 'Share screen') : (compatibilityStatus.reason || 'Screen sharing is not supported.')}
+          className={`p-2.5 rounded-2xl border backdrop-blur shadow-lg disabled:opacity-50 ${isScreenSharing ? 'bg-red-600/90 text-white border-red-300 hover:bg-red-600' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}
         >
-          {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+          {isScreenSharing ? (
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <path d="M8 21h8m-4-4v4" />
+            </svg>
+          )}
         </button>
         {onDisconnect && (
-          <button onClick={onDisconnect} className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-lg">End Session</button>
+          <button
+            onClick={onDisconnect}
+            aria-label="End session"
+            title="End session"
+            className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-lg"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
         )}
       </div>
     </div>
