@@ -12,9 +12,9 @@ import {
 } from '@livekit/components-react';
 import { Track } from 'livekit-client';
 import '@livekit/components-styles';
-import { Tldraw, useEditor, getSnapshot } from 'tldraw';
-import type { Editor } from 'tldraw';
-import 'tldraw/tldraw.css';
+import dynamic from 'next/dynamic';
+// Using 'any' for imperative API type to avoid version export mismatches
+// Excalidraw CSS will be added after install
 import { supabase } from '@/lib/supabaseClient';
 import { startScreenShare, stopScreenShare, isScreenSharing, showSuccess, BrowserCompatibility } from '@/lib/screenShare';
 
@@ -95,7 +95,7 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
   const [activeView, setActiveView] = useState('whiteboard');
   const [sharedFile, setSharedFile] = useState<{ url: string; name: string; type: string } | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const editorRef = React.useRef<Editor | null>(null);
+  const excalidrawRef = React.useRef<any | null>(null);
   
   // Screen sharing state
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -116,20 +116,18 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
       try {
         const message = JSON.parse(new TextDecoder().decode(msg.payload));
         console.log('MainContent: Parsed message received:', message);
-        if (message.type === 'file_share') {
-          setSharedFile(message.payload);
-          setActiveView('file');
-        } else if (message.type === 'whiteboard_update') {
-          console.log('MainContent: Received whiteboard update payload:', message.payload);
-          if (editorRef.current && message.payload) {
-            // Use TLDraw's store.put method to apply changes
+          if (message.type === 'file_share') {
+            setSharedFile(message.payload);
+            setActiveView('file');
+          } else if (message.type === 'excalidraw_update') {
             try {
-              editorRef.current.store.put(message.payload);
+              if (excalidrawRef.current && message.payload?.elements) {
+                excalidrawRef.current.updateScene({ elements: message.payload.elements });
+              }
             } catch (error) {
-              console.error('Error applying whiteboard update:', error);
+              console.error('Error applying excalidraw update:', error);
             }
           }
-        }
       } catch (e) {
         console.error('MainContent: Error parsing message:', e);
       }
@@ -317,7 +315,7 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
         className="absolute rounded-3xl overflow-hidden bg-white shadow-2xl"
         style={{ top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' }}
       >
-        {activeView === 'whiteboard' && <CollaborativeWhiteboard sendData={sendData} editorRef={editorRef} />}
+        {activeView === 'whiteboard' && <ExcalidrawWhiteboard sendData={sendData} excalidrawRef={excalidrawRef} />}
         {activeView === 'file' && sharedFile && <FileViewer file={sharedFile} />}
         {activeView === 'screen' && screenTrackRef && <ScreenView trackRef={screenTrackRef} />}
       </div>
@@ -405,45 +403,56 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
   );
 }
 
-function CollaborativeWhiteboard({ sendData, editorRef }: { sendData: (data: Uint8Array) => Promise<void>, editorRef: React.MutableRefObject<Editor | null> }) {
-  useEffect(() => {
-    // Hide watermark and extras via class targeting
-    const interval = setInterval(() => {
-      document.querySelector('[aria-label="Top panel"]')?.classList.add('hidden')
-      document.querySelector('[aria-label="Bottom left menu"]')?.classList.add('hidden')
-      document.querySelector('[aria-label="Made with TLDraw"]')?.classList.add('hidden')
-    }, 100)
+const Excalidraw = dynamic(async () => (await import('@excalidraw/excalidraw')).Excalidraw, { ssr: false });
 
-    return () => clearInterval(interval)
-  }, [])
+function ExcalidrawWhiteboard({ sendData, excalidrawRef }: { sendData: (data: Uint8Array) => Promise<void>, excalidrawRef: React.MutableRefObject<any | null> }) {
+  const sendingRef = React.useRef(false);
+  const lastSentVersion = React.useRef(0);
+  const debounceRef = React.useRef<number | null>(null);
+
+  // Inject Excalidraw CSS from CDN to avoid package export CSS issues
+  React.useEffect(() => {
+    const id = 'excalidraw-cdn-css';
+    if (!document.getElementById(id)) {
+      const link = document.createElement('link');
+      link.id = id;
+      link.rel = 'stylesheet';
+      link.href = 'https://unpkg.com/@excalidraw/excalidraw@latest/dist/excalidraw.css';
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  const onChange = React.useCallback((elements: any[], appState: any) => {
+    // Debounce + only send if changed
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(async () => {
+      try {
+        // Filter out deleted elements to keep payload small
+        const clean = (elements || []).filter((el: any) => !el.isDeleted);
+        const version = clean.reduce((acc: number, el: any) => Math.max(acc, el.version || 0), 0);
+        if (version <= lastSentVersion.current) return;
+        lastSentVersion.current = version;
+        const message = {
+          type: 'excalidraw_update',
+          payload: { elements: clean },
+        };
+        await sendData(new TextEncoder().encode(JSON.stringify(message)));
+      } catch (e) {
+        console.error('Error broadcasting excalidraw update:', e);
+      }
+    }, 120);
+  }, [sendData]);
 
   return (
-    <div
-      id="whiteboard"
-      className="w-full h-full relative bg-white rounded-lg ring-1 ring-gray-200 overflow-hidden"
-    >
-      <Tldraw
-        persistenceKey="session-whiteboard"
-        className="h-full w-full"
-        hideUi={false}
-        components={{ SharePanel: WhiteboardSync }}
-        onMount={(editor) => {
-          editorRef.current = editor;
-          // Note: Real-time collaboration would be implemented differently in TLDraw 3.14
-          // The editor.on('update') API has changed. For now, we'll just store the editor reference.
-          console.log('TLDraw editor mounted:', editor);
-        }}
+    <div className="w-full h-full bg-white">
+      <Excalidraw
+        excalidrawAPI={(api: any) => { excalidrawRef.current = api; }}
+        onChange={(elements: readonly any[], appState: any, _files: any) => onChange(elements as any[], appState)}
+        theme="light"
+        UIOptions={{ dockedSidebarBreakpoint: 0 }}
       />
     </div>
-  )
-}
-
-function WhiteboardSync() {
-  const editor = useEditor();
-  const room = useRoomContext();
-  
-  // This component doesn't render anything visible
-  return null;
+  );
 }
 
 interface FloatingVideosProps {
