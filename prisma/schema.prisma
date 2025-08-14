@@ -29,7 +29,7 @@ model Profiles {
   tutorSessions   Sessions[] @relation("TutorSessions")
   studentSessions Sessions[] @relation("StudentSessions")
   availabilitySlots TutorAvailability[] @relation("TutorAvailabilitySlots")
-  availabilityExceptions TutorAvailabilityException[]
+  availabilityExceptions TutorAvailabilityException[] @relation("TutorAvailabilityExceptions")
 }
 
 model Subjects {
@@ -108,9 +108,8 @@ model TutorAvailabilityException {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tutor Profiles @relation(fields: [tutorId], references: [id], onDelete: Cascade)
+  tutor Profiles @relation("TutorAvailabilityExceptions", fields: [tutorId], references: [id], onDelete: Cascade)
 
   @@index([tutorId, date])
   @@map("TutorAvailabilityException")
 }
-
