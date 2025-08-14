@@ -433,18 +433,7 @@ export default function InboxPage() {
             isOpen={isSessionOpen}
           />
           
-          {/* End Session Button Overlay */}
-          <div className="fixed top-4 right-4 z-50">
-            <button
-              onClick={() => handleEndSession(true)} // Force complete when intentionally ended
-              className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg font-medium shadow-lg transition-colors flex items-center gap-2"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              End Session
-            </button>
-          </div>
+          {/* End button overlay removed; use in-room toolbar */}
         </div>
       )}
     </div>
