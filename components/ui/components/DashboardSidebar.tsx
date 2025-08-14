@@ -185,7 +185,7 @@ export default function HomeSidebar({ userRole, userName }: HomeSidebarProps) {
         </div>
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="text-gray-300 hover:text-white transition-colors p-1 rounded"
+          className="text-gray-300 hover:text-white transition-colors p-1 rounded no-tap-highlight focus:outline-none"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isCollapsed ? "M13 5l7 7-7 7M5 5l7 7-7 7" : "M11 19l-7-7 7-7m8 14l-7-7 7-7"} />
@@ -199,14 +199,13 @@ export default function HomeSidebar({ userRole, userName }: HomeSidebarProps) {
           <div key={item.href} className="relative">
             <Link
               href={item.href}
-              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                pathname === item.href
-                  ? "bg-gradient-to-r from-blue-400/20 to-purple-500/20 text-white border border-white/20"
+              className={`flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors no-tap-highlight focus:outline-none ${
+                ((item.href === `/home/${userRole.toLowerCase()}`) ? (pathname === item.href) : (pathname === item.href || pathname.startsWith(item.href + '/')))
+                  ? "bg-gradient-to-r from-blue-400/20 to-purple-500/20 text-white"
                   : isCollapsed
-                    ? 'justify-center bg-transparent hover:bg-transparent focus:bg-transparent shadow-none border-none'
+                    ? 'justify-center bg-transparent hover:bg-transparent focus:bg-transparent shadow-none'
                     : "text-gray-300 hover:bg-white/10 hover:text-white"
               } ${isCollapsed ? 'justify-center' : ''}`}
-              style={isCollapsed ? { boxShadow: 'none', background: 'none', border: 'none' } : {}}
               title={isCollapsed ? item.label : undefined}
             >
               <span className={`relative ${isCollapsed ? 'w-7 h-7 flex items-center justify-center text-gray-300' : 'w-5 h-5 flex items-center justify-center'}`}>
@@ -252,4 +251,4 @@ export default function HomeSidebar({ userRole, userName }: HomeSidebarProps) {
       </div>
     </div>
   );
-} 
+}

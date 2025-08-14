@@ -166,11 +166,12 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({ tutor, isOpen, 
                  Send a request • Tutor will respond within 24 hours
                </p>
              )}
+             {/* Simple: request/instant only, no 30-day UI */}
            </div>
-         </div>
-       </div>
-     </div>
-   );
- };
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default TutorProfileBubble; 

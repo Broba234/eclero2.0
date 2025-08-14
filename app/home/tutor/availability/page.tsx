@@ -45,7 +45,7 @@ export default function TutorAvailability() {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>('');
   const [email, setEmail] = useState<string>('');
-  const [weekOffset, setWeekOffset] = useState<number>(0); // for date context only
+  // (UI was simplified; week offset removed)
 
   // Range helper for batch apply
   const [rangeStart, setRangeStart] = useState<string>('09:00');
@@ -240,28 +240,7 @@ export default function TutorAvailability() {
     );
   }
 
-  // Compute week date context for headers (approximate, for display only)
-  function getWeekDates(tz: string, offsetWeeks: number) {
-    const now = new Date();
-    const dtf = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' });
-    const weekdayStr = (dtf.format(now).slice(0,3));
-    const map: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-    const todayIdx = map[weekdayStr] ?? 0;
-    // Our grid starts on Monday (1). Compute local Monday offset from today
-    const deltaToMonday = (todayIdx - 1 + 7) % 7; // days since Monday
-    const startOfWeekUTC = new Date(now.getTime() - deltaToMonday * 86400000 + offsetWeeks * 7 * 86400000);
-    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'short', day: 'numeric' });
-    const fullFmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, month: 'short', day: 'numeric' });
-    const days = Array.from({ length: 7 }).map((_, i) => {
-      const d = new Date(startOfWeekUTC.getTime() + i * 86400000);
-      return fmt.format(d);
-    });
-    const rangeStart = fullFmt.format(startOfWeekUTC);
-    const rangeEnd = fullFmt.format(new Date(startOfWeekUTC.getTime() + 6 * 86400000));
-    return { days, rangeLabel: `${rangeStart} – ${rangeEnd}` };
-  }
-
-  const weekCtx = getWeekDates(timezone, weekOffset);
+  // Simplified UI: no week date header
 
   return (
     <div className="min-h-screen">
@@ -270,7 +249,6 @@ export default function TutorAvailability() {
           <div>
             <h1 className="text-3xl font-bold text-white">Availability</h1>
             <p className="text-gray-300 mt-1">Set your weekly recurring tutoring times.</p>
-            <p className="text-gray-400 text-sm mt-1">Week: {weekCtx.rangeLabel} ({timezone})</p>
           </div>
           <div className="flex items-center gap-3">
             <label className="text-gray-300 text-sm">Timezone</label>
@@ -317,21 +295,13 @@ export default function TutorAvailability() {
         {/* Grid */}
         <div className="mt-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/20 p-2 sm:p-4 overflow-x-auto" style={{ boxShadow: '0 8px 32px 0 rgba(31,38,135,0.37)' }}>
           <div className="min-w-[760px]">
-            {/* Week navigation */}
-            <div className="flex items-center justify-between px-2 pb-2">
-              <button onClick={() => setWeekOffset(w => w - 1)} className="px-3 py-1 rounded-full text-white bg-white/10 border border-white/30 hover:bg-white/20 transition">Prev week</button>
-              <div className="text-gray-300 text-sm">{weekCtx.rangeLabel}</div>
-              <div className="flex gap-2">
-                <button onClick={() => setWeekOffset(0)} className="px-3 py-1 rounded-full text-white bg-white/10 border border-white/30 hover:bg-white/20 transition">This week</button>
-                <button onClick={() => setWeekOffset(w => w + 1)} className="px-3 py-1 rounded-full text-white bg-white/10 border border-white/30 hover:bg-white/20 transition">Next week</button>
-              </div>
-            </div>
+            {/* Week navigation removed for minimal UI */}
             {/* Header row */}
             <div className="grid" style={{ gridTemplateColumns: `80px repeat(${DAYS.length}, 1fr)` }}>
               <div />
               {DAYS.map((d, i) => (
                 <div key={d.idx} className="flex items-center justify-between px-2 py-2">
-                  <span className="text-gray-200 font-semibold">{d.label} <span className="text-gray-400 font-normal">{weekCtx.days[i]}</span></span>
+                  <span className="text-gray-200 font-semibold">{d.label}</span>
                   <button onClick={() => toggleDayAll(d.idx)} className="text-xs text-blue-300 hover:text-purple-300">All</button>
                 </div>
               ))}

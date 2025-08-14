@@ -6,6 +6,11 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Reduce tap highlight flicker on mobile for sidebar links/buttons */
+.no-tap-highlight {
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Feature Flip Card Styles */
 .feature-card {
   width: 220px;
