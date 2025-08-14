@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import LiveKitRoom from '@/components/LiveKitRoom';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -21,6 +22,7 @@ interface Session {
 }
 
 export default function StudentSessions() {
+  const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filter, setFilter] = useState<'all' | 'active' | 'upcoming' | 'completed' | 'requested'>('all');
   
@@ -154,30 +156,8 @@ export default function StudentSessions() {
 
 
   const handleJoinSession = async (session: Session) => {
-    if (!userInfo) {
-      console.error('User info not available');
-      return;
-    }
-    
-    try {
-      // Use consistent room naming that matches the tutor side
-      // Room name should be based only on session ID, not timestamp
-      const roomName = `session-${session.id}`;
-      
-      console.log('Student joining session:', roomName);
-      
-      setCurrentSessionData({
-        roomName,
-        tutorName: session.tutorName,
-        subject: session.subject
-      });
-      setIsSessionOpen(true);
-    } catch (error) {
-      console.error('Error joining session:', error);
-      // Reset states if there was an error
-      setIsSessionOpen(false);
-      setCurrentSessionData(null);
-    }
+    if (!userInfo) return;
+    router.push(`/home/session/${session.id}`);
   };
 
   const handleEndSession = () => {
@@ -339,17 +319,7 @@ export default function StudentSessions() {
         </div>
       </div>
 
-      {/* LiveKit Session Room */}
-      {isSessionOpen && currentSessionData && userInfo && (
-        <LiveKitRoom
-          roomName={currentSessionData.roomName}
-          userIdentity={userInfo.identity}
-          userName={userInfo.name}
-          userRole="student"
-          onDisconnect={handleEndSession}
-          isOpen={isSessionOpen}
-        />
-      )}
+      {/* Session view moved to /home/session/[id] */}
     </div>
   );
 } 

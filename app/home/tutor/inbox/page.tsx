@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import LiveKitRoom from '@/components/LiveKitRoom';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -15,6 +16,7 @@ interface SessionRequest {
 }
 
 export default function InboxPage() {
+  const router = useRouter();
   const [requests, setRequests] = useState<SessionRequest[]>([]);
   const [filter, setFilter] = useState<'all' | 'pending' | 'accepted' | 'declined' | 'in_progress' | 'completed'>('all');
   
@@ -170,13 +172,8 @@ export default function InboxPage() {
         return;
       }
 
-      // Set session data and open LiveKit room
-      setCurrentSessionData({
-        roomName,
-        studentName: request.studentName,
-        subject: request.subject
-      });
-      setIsSessionOpen(true);
+      // Navigate to dedicated session page
+      router.push(`/home/session/${request.id}`);
       
       // Update local state
       setRequests(prev => 
@@ -188,9 +185,6 @@ export default function InboxPage() {
       console.log('Session started successfully:', roomName);
     } catch (error) {
       console.error('Error starting session:', error);
-      // Reset states if there was an error
-      setIsSessionOpen(false);
-      setCurrentSessionData(null);
     }
   };
 
@@ -421,21 +415,7 @@ export default function InboxPage() {
         </div>
       </div>
 
-      {/* LiveKit Session Room */}
-      {isSessionOpen && currentSessionData && userInfo && (
-        <div>
-          <LiveKitRoom
-            roomName={currentSessionData.roomName}
-            userIdentity={userInfo.identity}
-            userName={userInfo.name}
-            userRole="tutor"
-            onDisconnect={() => handleEndSession(false)} // Don't auto-complete on disconnect
-            isOpen={isSessionOpen}
-          />
-          
-          {/* End button overlay removed; use in-room toolbar */}
-        </div>
-      )}
+      {/* Session view moved to /home/session/[id] */}
     </div>
   );
 } 

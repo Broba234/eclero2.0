@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import LiveKitRoom from '@/components/LiveKitRoom';
 import { supabase } from '@/lib/supabaseClient';
 
@@ -21,6 +22,7 @@ interface Session {
 }
 
 export default function TutorSessions() {
+  const router = useRouter();
   const [sessions, setSessions] = useState<Session[]>([]);
   const [filter, setFilter] = useState<'all' | 'active' | 'upcoming' | 'completed' | 'requested'>('all');
   
@@ -152,29 +154,8 @@ export default function TutorSessions() {
   );
 
   const handleRejoinSession = async (session: Session) => {
-    if (!userInfo) {
-      console.error('Tutor user info not available');
-      return;
-    }
-    
-    try {
-      // Use consistent room naming that matches other session logic
-      const roomName = `session-${session.id}`;
-      
-      console.log('Tutor rejoining session:', roomName);
-      
-      setCurrentSessionData({
-        roomName,
-        studentName: session.studentName,
-        subject: session.subject
-      });
-      setIsSessionOpen(true);
-    } catch (error) {
-      console.error('Error rejoining session:', error);
-      // Reset states if there was an error
-      setIsSessionOpen(false);
-      setCurrentSessionData(null);
-    }
+    if (!userInfo) return;
+    router.push(`/home/session/${session.id}`);
   };
 
   const handleEndSession = async (forceComplete = false) => {
@@ -377,21 +358,7 @@ export default function TutorSessions() {
         </div>
       </div>
 
-      {/* LiveKit Session Room */}
-      {isSessionOpen && currentSessionData && userInfo && (
-        <div>
-          <LiveKitRoom
-            roomName={currentSessionData.roomName}
-            userIdentity={userInfo.identity}
-            userName={userInfo.name}
-            userRole="tutor"
-            onDisconnect={() => handleEndSession(false)} // Don't auto-complete on disconnect
-            isOpen={isSessionOpen}
-          />
-          
-          {/* End button overlay removed; use in-room toolbar */}
-        </div>
-      )}
+      {/* Session view moved to /home/session/[id] */}
     </div>
   );
 }
