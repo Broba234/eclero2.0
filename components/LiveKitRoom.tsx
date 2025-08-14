@@ -311,68 +311,46 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
   };
 
   return (
-    <div className="flex h-full">
-      <div className="flex-1 flex flex-col">
-        <div className="flex-1 relative">
-          {activeView === 'whiteboard' && <CollaborativeWhiteboard sendData={sendData} editorRef={editorRef} />}
-          {activeView === 'file' && sharedFile && <FileViewer file={sharedFile} />}
-          {activeView === 'screen' && screenTrackRef && <ScreenView trackRef={screenTrackRef} />}
-        </div>
+    <div className="relative h-full w-full">
+      {/* Whiteboard/file/screen content within a 0.75in bezel */}
+      <div
+        className="absolute rounded-3xl overflow-hidden bg-white shadow-2xl"
+        style={{ top: '0.75in', right: '0.75in', bottom: '0.75in', left: '0.75in' }}
+      >
+        {activeView === 'whiteboard' && <CollaborativeWhiteboard sendData={sendData} editorRef={editorRef} />}
+        {activeView === 'file' && sharedFile && <FileViewer file={sharedFile} />}
+        {activeView === 'screen' && screenTrackRef && <ScreenView trackRef={screenTrackRef} />}
       </div>
 
-      <div className="w-64 bg-gray-900 p-4 flex flex-col space-y-4">
-        <h2 className="text-xl font-bold">Session</h2>
-        <VideoSidebar allScreenShares={allScreenShares} screenTrackRef={screenTrackRef} onSelectScreenShare={setScreenTrackRef} />
-        <div className="space-y-2">
-          <button onClick={() => setActiveView('whiteboard')} className={`w-full px-4 py-2 rounded-lg ${activeView === 'whiteboard' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-700 hover:bg-gray-600'} text-white`}>Whiteboard</button>
-          <button onClick={() => fileInputRef.current?.click()} className="w-full bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg" disabled={isSending}>Share File</button>
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
-          {sharedFile && (
-            <button onClick={() => setActiveView('file')} className={`w-full px-4 py-2 rounded-lg ${activeView === 'file' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-700 hover:bg-gray-600'} text-white`}>View File</button>
-          )}
-          {screenTrackRef && (
-            <button onClick={() => setActiveView('screen')} className={`w-full px-4 py-2 rounded-lg ${activeView === 'screen' ? 'bg-blue-600 hover:bg-blue-500' : 'bg-gray-700 hover:bg-gray-600'} text-white`}>View Screen</button>
-          )}
-          
-          {/* Screen Share Toggle Button */}
-          <button 
-            onClick={isScreenSharing ? handleStopScreenShare : handleStartScreenShare} 
-            disabled={isSending || !compatibilityStatus.isSupported}
-            className="w-full bg-gray-700 hover:bg-gray-600 disabled:bg-gray-800 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg transition-colors"
-            title={compatibilityStatus.isSupported ? (isScreenSharing ? 'Click to stop screen sharing' : 'Click to share your screen. You may be prompted to grant permission.') : (compatibilityStatus.reason || 'Screen sharing is not supported.')}
-          >
-            {isScreenSharing ? 'Stop Share' : 'Share Screen'}
-          </button>
-          
-          {/* Screen sharing buttons */}
-          <div className="border-t border-gray-600 pt-2">
-            {!isScreenSharing ? (
-              <button 
-                onClick={handleStartScreenShare} 
-                disabled={!compatibilityStatus.isSupported}
-                className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-gray-800 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2 transition-colors"
-                title={compatibilityStatus.isSupported ? 'Click to share your screen. You may be prompted to grant permission.' : (compatibilityStatus.reason || 'Screen sharing is not supported.')}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span>Share Screen</span>
-              </button>
-            ) : (
-              <button 
-                onClick={handleStopScreenShare} 
-                className="w-full bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg flex items-center justify-center space-x-2"
-                title="Click to stop screen sharing"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
-                </svg>
-                <span>Stop Sharing</span>
-              </button>
-            )}
-          </div>
-        </div>
-        {onDisconnect && <button onClick={onDisconnect} className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg mt-auto">End Session</button>}
+      {/* Top-right view toggles */}
+      <div className="absolute top-4 right-4 flex items-center gap-2">
+        <button onClick={() => setActiveView('whiteboard')} className={`px-3 py-2 rounded-2xl backdrop-blur shadow-lg border ${activeView==='whiteboard' ? 'bg-blue-600/80 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}>Whiteboard</button>
+        {sharedFile && (
+          <button onClick={() => setActiveView('file')} className={`px-3 py-2 rounded-2xl backdrop-blur shadow-lg border ${activeView==='file' ? 'bg-blue-600/80 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}>File</button>
+        )}
+        {screenTrackRef && (
+          <button onClick={() => setActiveView('screen')} className={`px-3 py-2 rounded-2xl backdrop-blur shadow-lg border ${activeView==='screen' ? 'bg-blue-600/80 text-white border-blue-300' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}>Screen</button>
+        )}
+      </div>
+
+      {/* Right-side floating cams */}
+      <FloatingVideos allScreenShares={allScreenShares} screenTrackRef={screenTrackRef} onSelectScreenShare={setScreenTrackRef} />
+
+      {/* Bottom center toolbar */}
+      <div className="absolute left-1/2 -translate-x-1/2 bottom-4 flex items-center gap-3">
+        <button onClick={() => fileInputRef.current?.click()} disabled={isSending} className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-lg disabled:opacity-50">Share File</button>
+        <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
+        <button 
+          onClick={isScreenSharing ? handleStopScreenShare : handleStartScreenShare} 
+          disabled={isSending || !compatibilityStatus.isSupported}
+          className={`px-4 py-2 rounded-2xl border backdrop-blur shadow-lg ${isScreenSharing ? 'bg-red-600/90 text-white border-red-300 hover:bg-red-600' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'} disabled:opacity-50`}
+          title={compatibilityStatus.isSupported ? (isScreenSharing ? 'Click to stop screen sharing' : 'Click to share your screen. You may be prompted to grant permission.') : (compatibilityStatus.reason || 'Screen sharing is not supported.')}
+        >
+          {isScreenSharing ? 'Stop Sharing' : 'Share Screen'}
+        </button>
+        {onDisconnect && (
+          <button onClick={onDisconnect} className="px-4 py-2 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-lg">End Session</button>
+        )}
       </div>
     </div>
   );
@@ -419,107 +397,47 @@ function WhiteboardSync() {
   return null;
 }
 
-interface VideoSidebarProps {
+interface FloatingVideosProps {
   allScreenShares: Array<TrackReference & { timestamp: number; participantIdentity: string }>;
   screenTrackRef: TrackReference | null;
   onSelectScreenShare: (trackRef: TrackReference) => void;
 }
 
-function VideoSidebar({ allScreenShares, screenTrackRef, onSelectScreenShare }: VideoSidebarProps) {
+function FloatingVideos({ allScreenShares, screenTrackRef, onSelectScreenShare }: FloatingVideosProps) {
   const tracks = useTracks();
   const videoTracks = tracks.filter((track) => track.publication.kind === 'video');
-  
-  // Helper function to check if a participant is sharing screen
-  const isParticipantSharingScreen = (participantIdentity: string) => {
-    return allScreenShares.some(share => share.participantIdentity === participantIdentity);
-  };
-  
-  // Helper function to get screen share for a participant
-  const getParticipantScreenShare = (participantIdentity: string) => {
-    return allScreenShares.find(share => share.participantIdentity === participantIdentity);
-  };
-  
+
+  const isParticipantSharingScreen = (participantIdentity: string) =>
+    allScreenShares.some(share => share.participantIdentity === participantIdentity);
+
+  const getParticipantScreenShare = (participantIdentity: string) =>
+    allScreenShares.find(share => share.participantIdentity === participantIdentity);
+
   return (
-    <div className="space-y-4">
-      {/* Multiple Screen Share Selector */}
-      {allScreenShares.length > 1 && (
-        <div className="bg-gray-800 rounded-lg p-3">
-          <h3 className="text-sm font-semibold text-gray-300 mb-2">
-            Active Screen Shares ({allScreenShares.length})
-          </h3>
-          <div className="space-y-1">
-            {allScreenShares.map((share) => (
-              <button
-                key={share.publication.trackSid}
-                onClick={() => {
-                  onSelectScreenShare(share);
-                }}
-                className={`w-full text-left px-2 py-1 rounded text-xs transition-colors ${
-                  screenTrackRef?.publication.trackSid === share.publication.trackSid
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                }`}
-                title={`Switch to ${share.participantIdentity}'s screen share`}
-              >
-                📺 {share.participantIdentity || 'Unknown'}
-                {screenTrackRef?.publication.trackSid === share.publication.trackSid && ' (Active)'}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      
-      {/* Participant Video Thumbnails with Screen Share Indicators */}
+    <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3">
       {videoTracks.map((trackRef: TrackReference) => {
         const participantIdentity = trackRef.participant.identity || 'unknown';
-        const isScreenSharing = isParticipantSharingScreen(participantIdentity);
-        const participantScreenShare = getParticipantScreenShare(participantIdentity);
-        const isActiveScreenShare = screenTrackRef?.publication.trackSid === participantScreenShare?.publication.trackSid;
-        
+        const sharing = isParticipantSharingScreen(participantIdentity);
+        const participantShare = getParticipantScreenShare(participantIdentity);
+        const isActive = screenTrackRef?.publication.trackSid === participantShare?.publication.trackSid;
+
         return (
-          <div key={trackRef.publication.trackSid} className="rounded-lg overflow-hidden relative group">
-            <VideoTrack trackRef={trackRef} />
-            
-            {/* Screen Share Indicator Overlay */}
-            {isScreenSharing && (
-              <div className="absolute top-2 right-2 z-10">
-                <div 
-                  className={`px-2 py-1 rounded-md text-xs font-semibold flex items-center space-x-1 shadow-lg ${
-                    isActiveScreenShare 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-blue-600 text-white'
-                  }`}
-                  title={`${participantIdentity} is sharing their screen${isActiveScreenShare ? ' (Currently viewing)' : ''}`}
-                >
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span>{isActiveScreenShare ? 'LIVE' : 'SHARING'}</span>
-                </div>
-                
-                {/* Click to view screen share button (shown on hover) */}
-                {!isActiveScreenShare && participantScreenShare && (
-                  <button
-                    onClick={() => onSelectScreenShare(participantScreenShare)}
-                    className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                    title={`Click to view ${participantIdentity}'s screen share`}
-                  >
-                    <div className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-md text-sm font-medium flex items-center space-x-1">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                      <span>View Screen</span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            )}
-            
-            {/* Participant name label */}
-            <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 px-2 py-1 rounded text-xs text-white">
+          <div key={trackRef.publication.trackSid} className="relative pointer-events-auto w-[180px] h-[132px] rounded-2xl overflow-hidden border border-white/20 bg-white/5 backdrop-blur shadow-2xl">
+            <VideoTrack trackRef={trackRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            {/* Label */}
+            <div className="absolute bottom-2 left-2 bg-black/50 px-2 py-1 rounded text-[10px] text-white">
               {participantIdentity}
             </div>
+            {/* Screen share indicator + switch */}
+            {sharing && (
+              <button
+                onClick={() => participantShare && onSelectScreenShare(participantShare)}
+                className={`absolute top-2 right-2 px-2 py-1 rounded-md text-[10px] font-semibold shadow ${isActive ? 'bg-green-600 text-white' : 'bg-blue-600 text-white hover:bg-blue-500'}`}
+                title={isActive ? 'Viewing screen' : `View ${participantIdentity}'s screen`}
+              >
+                {isActive ? 'LIVE' : 'SCREEN'}
+              </button>
+            )}
           </div>
         );
       })}
