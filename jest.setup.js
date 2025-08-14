@@ -39,17 +39,9 @@ jest.mock('livekit-client', () => ({
   }))
 }));
 
-// Mock Tldraw
-jest.mock('tldraw', () => ({
-  Tldraw: ({ components, children }) => (
-    <div data-testid="tldraw-whiteboard">
-      {children}
-      {components?.SharePanel && <components.SharePanel />}
-    </div>
-  ),
-  useEditor: jest.fn(() => ({
-    update: jest.fn()
-  }))
+// Mock Excalidraw
+jest.mock('@excalidraw/excalidraw', () => ({
+  Excalidraw: () => <div data-testid="excalidraw-whiteboard" />
 }));
 
 // Mock Supabase client
