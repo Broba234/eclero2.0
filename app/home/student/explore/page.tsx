@@ -105,6 +105,7 @@ export default function ExploreTutors() {
   const [subjectsLoading, setSubjectsLoading] = useState(false);
   const [subjectsError, setSubjectsError] = useState<string | null>(null);
   const [showFilter, setShowFilter] = useState(false);
+  const [onlyActiveNow, setOnlyActiveNow] = useState(false);
 
   const { openTutorProfileModal } = useContext(TutorProfileModalContext)!;
 
@@ -113,7 +114,7 @@ export default function ExploreTutors() {
     const fetchTutors = async () => {
       setLoading(true);
       try {
-        const res = await fetch("/api/profiles/available-tutors");
+        const res = await fetch(`/api/profiles/available-tutors${onlyActiveNow ? '?availableNow=true' : ''}`);
         
         if (!res.ok) {
           console.error('Failed to fetch tutors:', res.status, res.statusText);
@@ -140,7 +141,7 @@ export default function ExploreTutors() {
       }
     };
     fetchTutors();
-  }, []);
+  }, [onlyActiveNow]);
 
   useEffect(() => {
     setSubjectsLoading(true);
@@ -265,8 +266,8 @@ export default function ExploreTutors() {
     <div className="max-w-5xl mx-auto py-10 px-4">
       <h1 className="text-4xl font-bold mb-6 text-white">Find a Tutor</h1>
       
-      {/* Filter Button */}
-      <div className="mb-6">
+      {/* Filter & Active Now */}
+      <div className="mb-6 flex flex-wrap items-center gap-3">
         <button
           onClick={() => setShowFilter(!showFilter)}
           className="flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-md border border-white/30 rounded-full shadow-2xl hover:bg-white/20 transition-all duration-200 text-white" style={{ boxShadow: '0 8px 32px 0 rgba(31,38,135,0.37)' }}
@@ -280,6 +281,12 @@ export default function ExploreTutors() {
               {studentSubjectIds.length} selected
             </span>
           )}
+        </button>
+        <button
+          onClick={() => setOnlyActiveNow(v => !v)}
+          className={`px-6 py-3 rounded-full border text-sm font-medium transition-all duration-200 ${onlyActiveNow ? 'bg-gradient-to-r from-blue-400 to-purple-500 text-white border-transparent' : 'bg-white/10 text-white border-white/30 hover:bg-white/20'}`}
+        >
+          {onlyActiveNow ? 'Showing Active Now' : 'Show Only Active Now'}
         </button>
       </div>
 
