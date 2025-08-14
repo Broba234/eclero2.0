@@ -29,6 +29,7 @@ model Profiles {
   tutorSessions   Sessions[] @relation("TutorSessions")
   studentSessions Sessions[] @relation("StudentSessions")
   availabilitySlots TutorAvailability[] @relation("TutorAvailabilitySlots")
+  availabilityExceptions TutorAvailabilityException[]
 }
 
 model Subjects {
