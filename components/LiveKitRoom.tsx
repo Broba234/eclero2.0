@@ -312,7 +312,7 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
     <div className="relative h-full w-full">
       {/* Whiteboard/file/screen content within a smaller bezel */}
       <div
-        className="absolute rounded-3xl overflow-hidden bg-white shadow-2xl"
+        className="absolute rounded-3xl overflow-hidden bg-white shadow-2xl z-0"
         style={{ top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' }}
       >
         {activeView === 'whiteboard' && <ExcalidrawWhiteboard sendData={sendData} excalidrawRef={excalidrawRef} />}
@@ -403,24 +403,61 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
   );
 }
 
-const Excalidraw = dynamic(async () => (await import('@excalidraw/excalidraw')).Excalidraw, { ssr: false });
+const Excalidraw = dynamic(
+  async () => {
+    const mod = await import('@excalidraw/excalidraw');
+    return mod.Excalidraw;
+  },
+  { 
+    ssr: false,
+    loading: () => <div className="w-full h-full flex items-center justify-center bg-white">Loading whiteboard...</div>
+  }
+);
+
+// Error boundary for Excalidraw
+class ExcalidrawErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(_error: Error) {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('Excalidraw error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-white">
+          <div className="text-center">
+            <p className="text-gray-600 mb-4">Failed to load whiteboard</p>
+            <button 
+              onClick={() => this.setState({ hasError: false })}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function ExcalidrawWhiteboard({ sendData, excalidrawRef }: { sendData: (data: Uint8Array) => Promise<void>, excalidrawRef: React.MutableRefObject<any | null> }) {
-  const sendingRef = React.useRef(false);
   const lastSentVersion = React.useRef(0);
   const debounceRef = React.useRef<number | null>(null);
 
-  // Inject Excalidraw CSS from CDN to avoid package export CSS issues
-  React.useEffect(() => {
-    const id = 'excalidraw-cdn-css';
-    if (!document.getElementById(id)) {
-      const link = document.createElement('link');
-      link.id = id;
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/@excalidraw/excalidraw@latest/dist/excalidraw.css';
-      document.head.appendChild(link);
-    }
-  }, []);
+  // CSS is already loaded via /public/excalidraw.css in layout.tsx
 
   const onChange = React.useCallback((elements: any[], appState: any) => {
     // Debounce + only send if changed
@@ -444,14 +481,16 @@ function ExcalidrawWhiteboard({ sendData, excalidrawRef }: { sendData: (data: Ui
   }, [sendData]);
 
   return (
-    <div className="w-full h-full bg-white">
-      <Excalidraw
-        excalidrawAPI={(api: any) => { excalidrawRef.current = api; }}
-        onChange={(elements: readonly any[], appState: any, _files: any) => onChange(elements as any[], appState)}
-        theme="light"
-        UIOptions={{ dockedSidebarBreakpoint: 0 }}
-      />
-    </div>
+    <ExcalidrawErrorBoundary>
+      <div className="w-full h-full bg-white">
+        <Excalidraw
+          excalidrawAPI={(api: any) => { excalidrawRef.current = api; }}
+          onChange={(elements: readonly any[], appState: any, _files: any) => onChange(elements as any[], appState)}
+          theme="light"
+          UIOptions={{ dockedSidebarBreakpoint: 0 }}
+        />
+      </div>
+    </ExcalidrawErrorBoundary>
   );
 }
 
@@ -514,7 +553,7 @@ function FloatingVideos({ allScreenShares, screenTrackRef, onSelectScreenShare }
         const participantShare = getParticipantScreenShare(participantIdentity);
         const isActive = screenTrackRef?.publication.trackSid === participantShare?.publication.trackSid;
         return (
-          <div key={id} className="pointer-events-auto fixed" style={{ left: pos.x, top: pos.y, width: 180, height: 132 }}>
+          <div key={id} className="pointer-events-auto fixed z-50" style={{ left: pos.x, top: pos.y, width: 180, height: 132 }}>
             <div className="relative w-full h-full rounded-2xl overflow-hidden border border-white/20 bg-white/5 backdrop-blur shadow-2xl">
               <VideoTrack trackRef={trackRef} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               {/* Drag handle */}
@@ -537,7 +576,7 @@ function FloatingVideos({ allScreenShares, screenTrackRef, onSelectScreenShare }
       })}
 
       {/* Docked column on right for remaining tiles */}
-      <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3">
+      <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-50">
         {dockedTiles.map((trackRef: TrackReference) => {
           const id = trackRef.publication.trackSid;
           if (hidden[id]) return null;
@@ -571,7 +610,7 @@ function FloatingVideos({ allScreenShares, screenTrackRef, onSelectScreenShare }
       {Object.values(hidden).some(Boolean) && (
         <button
           onClick={() => setHidden({})}
-          className="pointer-events-auto fixed right-4 bottom-4 p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-2xl"
+          className="pointer-events-auto fixed right-4 bottom-4 p-3 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-2xl z-50"
           title="Show hidden cams"
           aria-label="Show hidden cams"
         >
