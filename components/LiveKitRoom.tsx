@@ -405,8 +405,13 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
 
 const Excalidraw = dynamic(
   async () => {
-    const mod = await import('@excalidraw/excalidraw');
-    return mod.Excalidraw;
+    try {
+      const mod = await import('@excalidraw/excalidraw');
+      return mod.Excalidraw;
+    } catch (e) {
+      console.error('Excalidraw dynamic import failed:', e);
+      throw e;
+    }
   },
   { 
     ssr: false,

@@ -9,7 +9,7 @@
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && node scripts/copy-excalidraw-css.mjs"
   },
   "dependencies": {
     "@excalidraw/excalidraw": "^0.18.0",

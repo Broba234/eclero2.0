@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import Button from "@/components/ui/components/ui/button/Button";
+import SubjectSelector from "@/components/SubjectSelector";
+import { Modal } from "@/components/ui/components/ui/modal";
 
 export default function TutorProfile() {
   const [profile, setProfile] = useState<any>(null);
@@ -14,6 +16,8 @@ export default function TutorProfile() {
   const [editBio, setEditBio] = useState("");
   const [editHourlyRate, setEditHourlyRate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [subjectsModalOpen, setSubjectsModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -35,6 +39,19 @@ export default function TutorProfile() {
           setEditPhone(profileData.phone || "");
           setEditBio(profileData.bio || "");
           setEditHourlyRate(profileData.hourlyRate?.toString() || "");
+
+          // Normalize selected subject ids from profile
+          let normalizedSubjects: string[] = [];
+          if (profileData.subjects && Array.isArray(profileData.subjects)) {
+            normalizedSubjects = profileData.subjects
+              .map((s: any) => {
+                if (s && typeof s.id === "string") return s.id;
+                if (s && s.subject && typeof s.subject.id === "string") return s.subject.id;
+                return undefined;
+              })
+              .filter((id: any): id is string => typeof id === "string" && id.length > 0);
+          }
+          setSubjects(normalizedSubjects);
         }
         setLoading(false);
       } catch (error) {
@@ -75,6 +92,20 @@ export default function TutorProfile() {
     setSaving(false);
   };
 
+  const handleSubjectsChange = async (subjectIds: string[]) => {
+    if (!profile?.email) return;
+    setSubjects(subjectIds);
+    try {
+      await fetch("/api/profiles/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: profile.email, subjects: subjectIds }),
+      });
+    } catch (e) {
+      // noop; UI remains updated locally
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -109,16 +140,23 @@ export default function TutorProfile() {
                     <span className="ml-1 text-white font-medium">{profile.rating}</span>
                   </div>
                 )}
-                {profile.subjects && profile.subjects.length > 0 && (
+                {subjects && subjects.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {profile.subjects.map((subj: any) => (
-                      <span key={subj.subject?.code || subj.code} className="bg-gradient-to-r from-blue-400 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                        {subj.subject?.name || subj.name} ({subj.subject?.code || subj.code})
-                      </span>
-                    ))}
+                    {/* Display selected subject chips based on local state for consistency */}
+                    {Array.isArray(profile.subjects) && profile.subjects.length > 0
+                      ? profile.subjects.map((subj: any) => (
+                          <span key={subj.subject?.id || subj.id || subj.subject?.code || subj.code}
+                                className="bg-gradient-to-r from-blue-400 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                            {(subj.subject?.name || subj.name) ?? "Subject"} ({(subj.subject?.code || subj.code) ?? ""})
+                          </span>
+                        ))
+                      : null}
                   </div>
                 )}
-                <Button className="mt-4" onClick={handleEdit} variant="outline">Edit</Button>
+                <div className="flex gap-2 mt-4">
+                  <Button onClick={() => setSubjectsModalOpen(true)} variant="outline">Edit Courses</Button>
+                  <Button onClick={handleEdit} variant="outline">Edit Profile</Button>
+                </div>
               </>
             ) : (
               <>
@@ -135,13 +173,16 @@ export default function TutorProfile() {
                     <span className="ml-1 text-white font-medium">{profile.rating}</span>
                   </div>
                 )}
-                {profile.subjects && profile.subjects.length > 0 && (
+                {subjects && subjects.length > 0 && (
                   <div className="mt-2 mb-2 flex flex-wrap gap-2">
-                    {profile.subjects.map((subj: any) => (
-                      <span key={subj.subject?.code || subj.code} className="bg-gradient-to-r from-blue-400 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-medium">
-                        {subj.subject?.name || subj.name} ({subj.subject?.code || subj.code})
-                      </span>
-                    ))}
+                    {Array.isArray(profile.subjects) && profile.subjects.length > 0
+                      ? profile.subjects.map((subj: any) => (
+                          <span key={subj.subject?.id || subj.id || subj.subject?.code || subj.code}
+                                className="bg-gradient-to-r from-blue-400 to-purple-500 text-white px-3 py-1 rounded-full text-xs font-medium">
+                            {(subj.subject?.name || subj.name) ?? "Subject"} ({(subj.subject?.code || subj.code) ?? ""})
+                          </span>
+                        ))
+                      : null}
                   </div>
                 )}
                 <div className="flex gap-2 mt-4">
@@ -251,7 +292,22 @@ export default function TutorProfile() {
           )}
         </div>
       </div>
+
+      {/* Courses Modal */}
+      <Modal isOpen={subjectsModalOpen} onClose={() => setSubjectsModalOpen(false)} className="max-w-3xl p-6">
+        <div className="text-white">
+          <h3 className="text-2xl font-bold mb-4">Choose Courses You Teach</h3>
+          <SubjectSelector
+            selectedSubjectIds={subjects}
+            onSelectionChange={handleSubjectsChange}
+            maxSelections={10}
+            disabled={false}
+          />
+          <div className="mt-6 flex justify-end gap-3">
+            <Button variant="outline" onClick={() => setSubjectsModalOpen(false)}>Close</Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
-

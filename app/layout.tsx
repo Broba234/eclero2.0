@@ -17,8 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://unpkg.com" />
-        <link rel="stylesheet" href="https://unpkg.com/@excalidraw/excalidraw@latest/dist/excalidraw.css" />
+        <link rel="stylesheet" href="/excalidraw.css" />
       </head>
       <body className="bg-gray-900 overflow-x-hidden">
         {children}
