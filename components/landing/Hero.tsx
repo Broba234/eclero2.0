@@ -16,9 +16,9 @@ export default function Hero() {
     const descriptionOpacity = useTransform(scrollYProgress, [0.05, 0.2, 0.88, 0.98], [0, 1, 1, 0]);
     const descriptionY = useTransform(scrollYProgress, [0.05, 0.2], ["30px", "0px"]);
 
-    // Button animations - positioned much higher for immediate visibility
-    const buttonY = useTransform(scrollYProgress, [0, 0.5], ["20vh", "15vh"]);
-    const buttonOpacity = useTransform(scrollYProgress, [0, 0.2, 0.8], [1, 1, 1]);
+    // CTA buttons stay visible on load but disappear as the hero scrolls away
+    const ctaOpacity = useTransform(scrollYProgress, [0, 0.2, 0.4, 0.6], [1, 1, 0.5, 0]);
+    const ctaPointerEvents = useTransform(scrollYProgress, (value) => (value > 0.55 ? "none" : "auto"));
 
     return (
         <motion.div
@@ -120,7 +120,10 @@ export default function Hero() {
                     </div>
                 </div>
                 {/* Mobile buttons in normal flow */}
-                <div className="mt-8 flex flex-col items-center">
+                <motion.div
+                    className="mt-8 flex flex-col items-center"
+                    style={{ opacity: ctaOpacity, pointerEvents: ctaPointerEvents }}
+                >
                     <div className="flex flex-col sm:flex-row justify-center items-center gap-4 w-full max-w-md mx-auto">
                         <a 
                             href="/auth/register?role=student" 
@@ -143,7 +146,7 @@ export default function Hero() {
                             </svg>
                         </a>
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             <div ref={containerRef} className="hidden lg:block relative h-[200vh] z-10">
@@ -152,7 +155,8 @@ export default function Hero() {
                     {/* Desktop buttons - fixed until white section covers */}
                     <motion.div
                         style={{ 
-                            opacity: buttonOpacity,
+                            opacity: ctaOpacity,
+                            pointerEvents: ctaPointerEvents,
                             position: "fixed",
                             top: "70vh",
                             left: "0",
