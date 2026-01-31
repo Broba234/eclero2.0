@@ -9,12 +9,6 @@ const LIVEKIT_URL = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 const API_KEY = process.env.LIVEKIT_API_KEY;
 const API_SECRET = process.env.LIVEKIT_API_SECRET;
 
-console.log('=== LiveKit Configuration Test ===');
-console.log('Server URL:', LIVEKIT_URL);
-console.log('API Key exists:', !!API_KEY);
-console.log('API Key (first 6 chars):', API_KEY?.substring(0, 6) + '...');
-console.log('API Secret exists:', !!API_SECRET);
-console.log('API Secret length:', API_SECRET?.length);
 
 if (!LIVEKIT_URL || !API_KEY || !API_SECRET) {
   console.error('❌ Missing required environment variables');
@@ -24,12 +18,10 @@ if (!LIVEKIT_URL || !API_KEY || !API_SECRET) {
 // Test server connectivity
 const testServerConnectivity = () => {
   return new Promise((resolve, reject) => {
-    console.log('\n=== Testing Server Connectivity ===');
     
     // Extract host from WebSocket URL
     const wsUrl = LIVEKIT_URL.replace('wss://', 'https://').replace('ws://', 'http://');
     
-    console.log('Testing HTTP connectivity to:', wsUrl);
     
     const req = https.get(wsUrl, {
       timeout: 10000,
@@ -37,8 +29,6 @@ const testServerConnectivity = () => {
         'User-Agent': 'LiveKit-Test/1.0'
       }
     }, (res) => {
-      console.log('✅ Server responded with status:', res.statusCode);
-      console.log('Response headers:', res.headers);
       resolve({ status: res.statusCode, headers: res.headers });
     });
     
@@ -57,7 +47,6 @@ const testServerConnectivity = () => {
 
 // Test token generation
 const testTokenGeneration = async () => {
-  console.log('\n=== Testing Token Generation ===');
   
   try {
     // Import the LiveKit SDK
@@ -66,8 +55,6 @@ const testTokenGeneration = async () => {
     const testRoom = 'test-room-' + Date.now();
     const testUser = 'test-user-' + Date.now();
     
-    console.log('Creating token for room:', testRoom);
-    console.log('Creating token for user:', testUser);
     
     const at = new AccessToken(API_KEY, API_SECRET, {
       identity: testUser,
@@ -80,15 +67,9 @@ const testTokenGeneration = async () => {
       canSubscribe: true 
     });
     
-    console.log('AccessToken object created:', !!at);
-    console.log('About to call toJwt()...');
     
     const token = await at.toJwt();
-    
-    console.log('✅ Token generated successfully');
-    console.log('Token type:', typeof token);
-    console.log('Token length:', token ? token.length : 'undefined');
-    console.log('Token (first 50 chars):', token ? token.substring(0, 50) + '...' : 'No token generated');
+  
     
     return { token, room: testRoom, user: testUser };
   } catch (error) {

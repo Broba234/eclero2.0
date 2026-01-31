@@ -51,7 +51,27 @@ export default function SessionRoomPage() {
       userIdentity={identity}
       userName={displayName}
       userRole={(role === "tutor" ? "tutor" : "student") as any}
-      onDisconnect={() => router.push(`/home/${role || "student"}`)}
+      onDisconnect={async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          router.push("/auth/login");
+          return;
+        }
+        console.log('sessionId', sessionId);
+        const res = await fetch(`/api/sessions/update-status`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            sessionId: sessionId,
+            status: 'completed',
+            userId: user.id
+          })
+        })
+        if (res.ok) {
+          router.push(`/home/${role || "student"}`);
+        } else {
+          console.error('Failed to update session status');
+        }
+      }}
       isOpen={true}
     />
   );

@@ -1,8 +1,12 @@
 export interface BookSessionParams {
   tutorId: string;
   studentId: string;
+  start_time: string;
+  duration: number;
   topic?: string;
   notes?: string;
+  date: string;
+  amount: any;
 }
 
 export interface SessionResponse {
@@ -13,6 +17,7 @@ export interface SessionResponse {
 }
 
 export const bookSession = async (params: BookSessionParams): Promise<SessionResponse> => {
+
   try {
     const res = await fetch('/api/sessions/create', {
       method: 'POST',
@@ -20,8 +25,12 @@ export const bookSession = async (params: BookSessionParams): Promise<SessionRes
       body: JSON.stringify({
         tutorId: params.tutorId,
         studentId: params.studentId,
+        start_time: params.start_time,
+        duration: params.duration,
         topic: params.topic,
         notes: params.notes,
+        date: params.date,
+        amount: params.amount,
       }),
     });
 

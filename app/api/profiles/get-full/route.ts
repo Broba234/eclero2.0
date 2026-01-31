@@ -9,11 +9,10 @@ export async function GET(request: Request) {
       return new Response(JSON.stringify({ error: 'Email parameter is required' }), { status: 400 });
     }
 
-    console.log('[PROFILE_GET_FULL] Looking up full profile for email:', email);
-
     const profile = await prisma.profiles.findUnique({
       where: { email },
       select: { 
+        id: true,
         role: true,
         name: true,
         email: true,
@@ -27,28 +26,32 @@ export async function GET(request: Request) {
         experience: true,
         created_at: true,
         updated_at: true,
+        profile_setup: true,
+        is_tutor: true,
         subjects: {
           select: {
-            subject: {
+            Subjects: {
               select: {
                 id: true,
                 name: true,
                 code: true,
-                grade: true
+                grade: true,
+                category: true,
+                created_at: true,
+                updated_at: true,
               }
             }
           }
         }
       }
     });
-
-    console.log('[PROFILE_GET_FULL] Found profile:', profile);
+    const subjects = profile.subjects.map(pivot => pivot.Subjects);
 
     if (!profile) {
       return new Response(JSON.stringify({ error: 'Profile not found' }), { status: 404 });
     }
 
-    return new Response(JSON.stringify(profile), { status: 200 });
+    return new Response(JSON.stringify({ ...profile, subjects }), { status: 200 });
   } catch (error: any) {
     console.error('[PROFILE_GET_FULL] Error:', error);
     return new Response(JSON.stringify({

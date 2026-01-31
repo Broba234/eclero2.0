@@ -14,9 +14,6 @@ envContent.split('\n').forEach(line => {
 const supabaseUrl = envVars.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = envVars.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-console.log('Supabase URL:', supabaseUrl);
-console.log('Supabase Key exists:', !!supabaseKey);
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function testConnection() {
@@ -27,7 +24,6 @@ async function testConnection() {
     if (error) {
       console.error('Database connection error:', error);
     } else {
-      console.log('Database connection successful');
     }
     
     // Test auth configuration
@@ -36,7 +32,6 @@ async function testConnection() {
     if (authError) {
       console.error('Auth configuration error:', authError);
     } else {
-      console.log('Auth configuration successful');
     }
     
   } catch (error) {

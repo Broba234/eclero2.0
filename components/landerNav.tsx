@@ -13,7 +13,7 @@ export default function LanderNav() {
       {/* Right links */}
       <div className="flex items-center gap-4 absolute right-8 top-1/2 -translate-y-1/2">
         <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">About</a>
-        <a href="/auth/login" className="ml-2 py-1.5 px-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition">Log In</a>
+        <a href="/auth/login" className="ml-2 py-1.5 px-3 bg-gradient-to-r from-[#1089d3] to-[#12B1D1] text-white rounded-full font-semibold hover:bg-blue-700 transition">Log In</a>
       </div>
     </nav>
   );

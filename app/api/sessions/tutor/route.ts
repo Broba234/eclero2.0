@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'TutorId parameter is required' }, { status: 400 });
     }
 
-    console.log('Fetching sessions for tutor:', tutorId);
 
     // Fetch sessions where user is the tutor
     const { data: sessions, error: fetchError } = await supabase
@@ -42,8 +41,6 @@ export async function GET(request: NextRequest) {
         code: fetchError.code 
       }, { status: 500 });
     }
-
-    console.log('Tutor sessions fetched successfully:', sessions?.length || 0, 'sessions');
 
     return NextResponse.json({ 
       success: true, 

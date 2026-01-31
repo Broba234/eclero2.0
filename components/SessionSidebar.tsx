@@ -26,7 +26,7 @@ export function SessionSidebar() {
       <div className="flex flex-col gap-3">
         <Button
           className="justify-start"
-          onClick={() => console.log('Screen share clicked')}
+          onClick={() => {}}
         >
           Share Screen
         </Button>
@@ -51,7 +51,7 @@ export function SessionSidebar() {
         <Button
           variant="outline"
           className="justify-start border-red-300 text-red-600 hover:bg-red-50"
-          onClick={() => console.log('End session clicked')}
+          onClick={() => {}}
         >
           End Session
         </Button>

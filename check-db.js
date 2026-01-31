@@ -13,8 +13,6 @@ async function checkProfiles() {
       }
     });
     
-    console.log('Found profiles:', profiles);
-    
     const subjects = await prisma.subject.findMany({
       select: {
         id: true,
@@ -22,7 +20,6 @@ async function checkProfiles() {
       }
     });
     
-    console.log('Found subjects:', subjects);
     
   } catch (error) {
     console.error('Error:', error);

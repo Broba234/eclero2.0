@@ -2,7 +2,6 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    console.log('[SUBJECTS_GET] Fetching all subjects');
 
     const subjects = await prisma.subjects.findMany({
       orderBy: [

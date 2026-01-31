@@ -9,14 +9,10 @@ export async function GET(request: Request) {
       return new Response(JSON.stringify({ error: 'Email parameter is required' }), { status: 400 });
     }
 
-    console.log('[PROFILE_GET] Looking up profile for email:', email);
-
     const profile = await prisma.profiles.findUnique({
       where: { email },
       select: { role: true }
     });
-
-    console.log('[PROFILE_GET] Found profile:', profile);
 
     if (!profile) {
       return new Response(JSON.stringify({ error: 'Profile not found' }), { status: 404 });

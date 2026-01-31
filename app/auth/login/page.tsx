@@ -20,14 +20,11 @@ function LoginContent() {
         setLoading(true);
 
         try {
-            console.log('[LOGIN] Attempting login for:', { email });
             
             const { data, error: signInError } = await supabase.auth.signInWithPassword({
                 email,
                 password,
             });
-
-            console.log('[LOGIN] Supabase user:', data.user);
 
             if (signInError) {
                 console.error('[LOGIN] Sign in error:', signInError);
@@ -41,7 +38,6 @@ function LoginContent() {
             // Fetch user role from the database using email via API
             const profileRes = await fetch(`/api/profiles/get?email=${encodeURIComponent(email)}`);
             
-            console.log('[LOGIN] Profile API response status:', profileRes.status);
             
             if (!profileRes.ok) {
                 const errorData = await profileRes.json().catch(() => ({ error: 'Failed to parse error response' }));
@@ -50,11 +46,6 @@ function LoginContent() {
             }
 
             const userData = await profileRes.json();
-            console.log('[LOGIN] Profile lookup result:', {
-                email,
-                userData,
-                hasRole: !!userData?.role
-            });
             
             if (!userData?.role) {
                 console.error('[LOGIN] No role found in profile data:', userData);
@@ -76,7 +67,6 @@ function LoginContent() {
                     homePath = "/home";
             }
 
-            console.log('[LOGIN] Success:', { userId: data.user.id });
             router.push(homePath);
         } catch (err: any) {
             console.error('[LOGIN] Error:', err?.message || err, err);
@@ -87,51 +77,90 @@ function LoginContent() {
     }
 
     return (
-        <main className="min-h-screen w-full flex flex-col items-center justify-center px-4" style={{
-            background: 'linear-gradient(to bottom, #2b3340, #23272f, #181a1b)'
-        }}>
-            <div className="max-w-sm w-full space-y-8 bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20" style={{ boxShadow: '0 8px 32px 0 rgba(31,38,135,0.37)' }}>
-                <div className="text-center">
-                    <div className="mt-5 space-y-2">
-                        <h3 className="text-gray-100 text-2xl font-bold sm:text-3xl">Log in to your account</h3>
-                        <p className="">Don't have an account? <Link href={`/auth/register?role=${role}`} className="font-medium text-indigo-600 hover:text-indigo-500">Sign up</Link></p>
-                    </div>
-                </div>
-                <form onSubmit={handleSubmit} className="space-y-5">
-                    <div>
-                        <label className="font-medium text-white">Email</label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            className="w-full mt-2 px-3 py-2 text-white bg-transparent outline-none border border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40 shadow-sm rounded-lg placeholder-gray-300"
-                        />
-                    </div>
-                    <div>
-                        <label className="font-medium text-white">Password</label>
-                        <input
-                            type="password"
-                            required
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            className="w-full mt-2 px-3 py-2 text-white bg-transparent outline-none border border-white/30 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/40 shadow-sm rounded-lg placeholder-gray-300"
-                        />
-                    </div>
-                    {error && <div className="text-red-400 text-sm">{error}</div>}
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full px-4 py-2 text-white font-medium bg-gradient-to-r from-blue-400 to-purple-500 hover:from-blue-500 hover:to-purple-600 active:from-blue-600 active:to-purple-700 rounded-lg duration-150 shadow-lg"
-                    >
-                        {loading ? "Signing in..." : "Sign in"}
-                    </button>
-                </form>
-                <div className="text-center">
-                    <Link href="/auth/forgot-password" className="text-blue-300 hover:text-purple-300 transition">Forgot password?</Link>
-                </div>
+        <main className="min-h-screen w-full flex flex-col items-center justify-center px-4 bg-gradient-to-b from-[#F8F9FD] to-gray-400">
+        <div className="max-w-2xl w-full bg-gradient-to-b from-white via-[#f4f7fb] to-white rounded-[40px] p-6 border-4 border-white shadow-[rgba(133,189,215,0.878)_0px_30px_30px_-20px]">
+        <div className="text-center">
+  {/* Icon Header */}
+  <div className="flex justify-center mb-4">
+    <div className="w-16 h-16 rounded-full bg-[#1559C6] flex items-center justify-center shadow-[rgba(133,189,215,0.878)_0px_15px_20px_-10px]">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      </svg>
+    </div>
+  </div>
+  <h2 className="text-3xl font-black text-[#1559C6] mb-1">Sign In</h2>
+  <p className="text-gray-600 text-sm mb-4">
+   Please enter your email and password to sign in.
+  </p>
+</div>
+  
+          <form onSubmit={handleSubmit} className="mt-5">
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder="E-mail"
+              className="w-full focus-border-inline bg-white border-none px-5 py-4 rounded-[20px] mt-4 shadow-[#cff0ff_0px_10px_10px_-5px] placeholder-gray-400 focus:outline-none focus:[border-inline:2px_solid_#12B1D1] transition-all"
+            />
+            
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Password"
+              className="w-full focus-border-inline bg-white border-none px-5 py-4 rounded-[20px] mt-4 shadow-[#cff0ff_0px_10px_10px_-5px] placeholder-gray-400 focus:outline-none focus:[border-inline:2px_solid_#12B1D1] transition-all"
+            />
+  
+            <div className="mt-2 ml-2">
+              <Link 
+                href="/auth/reset" 
+                className="text-[11px] text-[#1559C6] hover:text-[#1559C6] transition"
+              >
+                Forgot Password ?
+              </Link>
             </div>
-        </main>
+  
+            {error && (
+              <div className="mt-4 text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">
+                {error}
+              </div>
+            )}
+  
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full font-bold text-white py-4 mt-5 rounded-[20px] bg-[#1559C6] shadow-[rgba(133,189,215,0.878)_0px_20px_10px_-15px] border-none transition-all duration-200 hover:scale-[1.03] hover:shadow-[rgba(133,189,215,0.878)_0px_23px_10px_-20px] active:scale-95 active:shadow-[rgba(133,189,215,0.878)_0px_15px_10px_-10px] disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:scale-100"
+            >
+              {loading ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+  
+          <div className="mt-6 flex gap-3 items-center justify-start">
+          <p className="text-gray-600 text-sm">
+    Don't have an account? Sign up as:
+  </p>
+  
+  <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+    <Link
+      href={`/auth/register?role=student`}
+      className="text-[#1559C6] hover:text-[#1559C6] transition text-sm underline"
+    >
+      Student
+    </Link>
+    <span className="text-gray-600 text-sm">or</span>
+    
+    <Link
+      href={`/auth/register?role=tutor`}
+      className="text-[#1559C6] hover:text-[#1559C6] transition text-sm underline"
+    >
+      Tutor
+    </Link>
+  </div>
+          </div>
+        </div>
+      </main>
     );
 }
 

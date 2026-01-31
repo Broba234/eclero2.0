@@ -1,21 +1,26 @@
 import { prisma } from "@/lib/prisma";
 
-function getLocalParts(timeZone: string) {
-  const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hour12: false,
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-  const parts = dtf.formatToParts(new Date());
-  const map = Object.fromEntries(parts.map(p => [p.type, p.value]));
-  const weekdayStr = (map.weekday || 'Sun').slice(0,3);
-  const weekdayMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const day = weekdayMap[weekdayStr] ?? 0;
-  const hour = map.hour || '00';
-  const minute = map.minute || '00';
-  return { day, hm: `${hour}:${minute}` };
+function isSlotActiveToday(
+  slot: { start_date: Date | null; end_date: Date | null },
+  today: Date
+) {
+  if (!slot.start_date || !slot.end_date) return false;
+  const todayStart = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate()
+  );
+  const todayEnd = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
+
+  return slot.start_date <= todayEnd && slot.end_date >= todayStart;
 }
 
 export async function GET(req: Request) {
@@ -33,39 +38,82 @@ export async function GET(req: Request) {
         isAvailableNow: true,
         rating: true,
         education: true,
-        subjects: { select: { subject: { select: { id: true, name: true, code: true, grade: true } } } },
+        subjects: { select: { Subjects: { select: { id: true, name: true, code: true, grade: true } } } },
       },
       orderBy: { name: "asc" },
     });
-
+    
     const tutorIds = tutors.map(t => t.id);
+    
+    // Fetch active slots
     const slots = await prisma.tutorAvailability.findMany({
-      where: { tutorId: { in: tutorIds }, isActive: true },
-      select: { tutorId: true, dayOfWeek: true, startTime: true, endTime: true, timezone: true },
+      where: { 
+        tutor_id: { in: tutorIds }, 
+        is_active: true 
+      },
+      select: { 
+        tutor_id: true, 
+        subject_id: true, 
+        start_time: true, 
+        end_time: true, 
+        start_date: true, 
+        end_date: true 
+      },
     });
-
-    const byTutor = new Map<string, { timezone: string; items: { dayOfWeek: number; start: string; end: string }[] }>();
-    for (const s of slots) {
-      const hhmm = (d: Date) => `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
-      const row = byTutor.get(s.tutorId) || { timezone: s.timezone || 'UTC', items: [] };
-      row.timezone = row.timezone || s.timezone || 'UTC';
-      row.items.push({ dayOfWeek: s.dayOfWeek, start: hhmm(s.startTime), end: hhmm(s.endTime) });
-      byTutor.set(s.tutorId, row);
-    }
-
-    const tutorsWithDerived = tutors.map(t => {
-      const subj = t.subjects.map((ps: any) => ps.subject);
-      const slotInfo = byTutor.get(t.id);
-      let nowInSlot = false;
-      if (slotInfo && slotInfo.items.length) {
-        const { day, hm } = getLocalParts(slotInfo.timezone);
-        nowInSlot = slotInfo.items.some(s => s.dayOfWeek === day && s.start <= hm && hm < s.end);
+    
+    // Group slots by tutor id for quick lookup later
+    const slotsByTutorId = new Map<
+      string,
+      Array<{
+        subject_id: string | null;
+        start_time: Date | null;
+        end_time: Date | null;
+        start_date: Date | null;
+        end_date: Date | null;
+      }>
+    >();
+    
+    for (const slot of slots) {
+      if (!slotsByTutorId.has(slot.tutor_id)) {
+        slotsByTutorId.set(slot.tutor_id, []);
       }
-      const derivedActiveNow = !!(t.isAvailableNow || nowInSlot);
-      return { ...t, subjects: subj, derivedActiveNow };
-    });
+      slotsByTutorId.get(slot.tutor_id)!.push({
+        subject_id: slot.subject_id,
+        start_time: slot.start_time,
+        end_time: slot.end_time,
+        start_date: slot.start_date,
+        end_date: slot.end_date,
+      });
+    }
+    
+    // Process tutors with availability check
+    const tutorsWithDerived = tutors.map((t) => {
+      const subjects = t.subjects.map((ps: any) => ps.Subjects);
+      const tutorSlots = slotsByTutorId.get(t.id) || [];
 
-    const finalList = filterAvailable ? tutorsWithDerived.filter(t => t.derivedActiveNow) : tutorsWithDerived;
+      const today = new Date();
+
+      // Filter slots to only include those active today
+      const todaysSlots = tutorSlots.filter((slot) =>
+        isSlotActiveToday(slot, today)
+      );
+      const hasSlotToday = todaysSlots.length > 0;
+
+      // Only use slot-based availability
+      const derivedActiveNow = hasSlotToday;
+
+      return {
+        ...t,
+        subjects,
+        derivedActiveNow,
+        availableSlots: todaysSlots // Return only today's slots instead of all slots
+      };
+    });
+    
+    const finalList = filterAvailable 
+      ? tutorsWithDerived.filter(t => t.derivedActiveNow) 
+      : tutorsWithDerived;
+    
     return Response.json({ tutors: finalList });
   } catch (error) {
     console.error('Error fetching tutors:', error);

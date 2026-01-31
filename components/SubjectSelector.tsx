@@ -16,7 +16,8 @@ type CategoryGroup = {
 };
 
 interface SubjectSelectorProps {
-  selectedSubjectIds: string[];
+  // Can be an array of subject IDs or full subject objects
+  selectedSubjectIds: Array<string | Subjects>;
   onSelectionChange: (ids: string[]) => void;
   maxSelections?: number;
   disabled?: boolean;
@@ -72,8 +73,13 @@ export default function SubjectSelector({
       });
   }, []);
 
+  // Normalize selectedSubjectIds prop to always work with string IDs internally
+  const selectedIds: string[] = (selectedSubjectIds ?? [])
+    .map((item) => (typeof item === "string" ? item : item?.id))
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+
   const toggleSubject = (id: string) => {
-    const ids = selectedSubjectIds ?? [];
+    const ids = selectedIds;
     if (ids.includes(id)) {
       onSelectionChange(ids.filter((sid) => sid !== id));
     } else {
@@ -84,145 +90,226 @@ export default function SubjectSelector({
   };
 
   const removeSubject = (id: string) => {
-    onSelectionChange(selectedSubjectIds.filter((sid) => sid !== id));
+    onSelectionChange(selectedIds.filter((sid) => sid !== id));
   };
 
-  // For .includes, filter selectedSubjectIds to only valid strings
-  const validSelectedSubjectIds = (selectedSubjectIds ?? []).filter((id): id is string => typeof id === 'string' && id.length > 0);
+  // For .includes, we already have a normalized list of valid IDs
+  const validSelectedSubjectIds = selectedIds;
 
   // Find subject details for selected chips
   const selectedSubjects: Subjects[] = [];
   subjects.forEach((subj) => {
-    if (typeof subj.id === 'string' && subj.id.length > 0 && validSelectedSubjectIds.includes(subj.id)) {
+    if (typeof subj.id === "string" && subj.id.length > 0 && validSelectedSubjectIds.includes(subj.id)) {
       selectedSubjects.push(subj);
     }
   });
 
   return (
-    <div className="w-full max-w-2xl mx-auto">
-      <h4 className="text-lg font-semibold mb-2">What courses are you proficient in?</h4>
-      {error && <div className="text-red-500 mb-2">{error}</div>}
-      <div className="mb-4 flex flex-wrap gap-2">
-        {selectedSubjects.map((subject) => (
-          <span
-            key={subject.id || 'unknown'}
-            className="flex items-center bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium mr-2 mb-2"
-          >
-            {subject.name} ({subject.code})
-            <button
-              type="button"
-              className="ml-2 text-indigo-500 hover:text-red-500 focus:outline-none"
-              onClick={() => removeSubject(subject.id)}
-              disabled={disabled}
-              aria-label={`Remove ${subject.name}`}
-            >
-              &times;
-            </button>
-          </span>
-        ))}
-      </div>
-      <div className="flex items-center gap-4 mb-4">
-        <span className="font-medium">Filter by grade:</span>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            className={`px-3 py-1 rounded-full border text-sm transition ${
-              gradeFilter === null
-                ? "bg-blue-600 text-white border-blue-600"
-                : "bg-white text-gray-800 border-gray-300 hover:bg-blue-50"
-            }`}
-            onClick={() => setGradeFilter(null)}
-            disabled={disabled}
-          >
-            All
-          </button>
-          {GRADES.map((grade) => (
-            <button
-              key={grade}
-              type="button"
-              className={`px-3 py-1 rounded-full border text-sm transition ${
-                gradeFilter === grade
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-white text-gray-800 border-gray-300 hover:bg-blue-50"
-              }`}
-              onClick={() => setGradeFilter(grade)}
-              disabled={disabled}
-            >
-              {grade}
-            </button>
-          ))}
+    <div className="w-full max-w-3xl mx-auto">
+      <div className="rounded-2xl border border-slate-200 bg-white/80 shadow-sm backdrop-blur-sm p-6 md:p-8 space-y-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+          <div>
+            <h4 className="text-xl font-semibold tracking-tight text-slate-900">
+              What course you willing to learn?
+            </h4>
+            <p className="mt-1 text-sm text-slate-500">
+              Select up to {maxSelections ?? "several"} subjects that you want to learn.
+            </p>
+          </div>
+          {maxSelections && (
+            <div className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-1.5 text-xs font-medium text-slate-600 border border-slate-200">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              {selectedSubjects.length} of {maxSelections} selected
+            </div>
+          )}
         </div>
-      </div>
-      {loading ? (
-        <div className="text-gray-500">Loading subjects...</div>
-      ) : (
-        <div>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {categories.map((cat) => (
+
+        {error && (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {/* Selected chips */}
+        <div className="rounded-xl border border-slate-200 bg-slate-50/60 px-3 py-3 min-h-[52px]">
+          {selectedSubjects.length === 0 ? (
+            <div className="text-xs text-slate-400">
+              No subjects selected yet. Start by choosing a category below.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {selectedSubjects.map((subject) => (
+                <span
+                  key={subject.id || "unknown"}
+                  className="group inline-flex items-center gap-1.5 rounded-full bg-slate-900 text-slate-50 px-3 py-1.5 text-xs font-medium shadow-sm"
+                >
+                  <span className="truncate max-w-[180px]">
+                    {subject.name}{" "}
+                    <span className="text-slate-300">
+                      ({subject.code}) · G{subject.grade}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full bg-slate-700/80 text-[10px] text-slate-100 hover:bg-red-500 transition-colors disabled:opacity-50"
+                    onClick={() => removeSubject(subject.id)}
+                    disabled={disabled}
+                    aria-label={`Remove ${subject.name}`}
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Grade filter */}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+            Filter subjects by grade level
+          </div>
+          <div className="inline-flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                gradeFilter === null
+                  ? "bg-slate-900 text-white border-slate-900 shadow-sm"
+                  : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+              }`}
+              onClick={() => setGradeFilter(null)}
+              disabled={disabled}
+            >
+              All grades
+            </button>
+            {GRADES.map((grade) => (
               <button
-                key={cat.name || 'unknown'}
+                key={grade}
                 type="button"
-                onClick={() => setExpanded(expanded === cat.name ? null : cat.name)}
-                className={`px-4 py-2 rounded-full border font-medium transition-all duration-200 ${
-                  expanded === cat.name
-                    ? "bg-gradient-to-r from-blue-400 to-purple-500 text-white border-transparent"
-                    : "bg-white/10 text-white border-white/30 hover:bg-white/20"
+                className={`px-3 py-1.5 rounded-full border text-xs font-medium transition-all ${
+                  gradeFilter === grade
+                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    : "bg-white text-slate-700 border-slate-200 hover:bg-blue-50"
                 }`}
+                onClick={() => setGradeFilter(grade)}
                 disabled={disabled}
               >
-                {cat.name}
+                Grade {grade}
               </button>
             ))}
           </div>
-          {categories.map(
-            (cat) =>
-              expanded === cat.name && (
-                <div key={(cat.name ? cat.name : 'unknown') + "-subjects"} className="mb-6 ml-2">
-                  <div className="mb-2 font-bold text-white">
-                    {cat.name} Subjects:
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {cat.subjects
-                      .filter((subject) =>
-                        gradeFilter === null ? true : subject.grade === gradeFilter
-                      )
-                      .map((subject) => (
-                        <button
-                          key={subject.id || 'unknown'}
-                          type="button"
-                          onClick={() => toggleSubject(subject.id)}
-                          className={`px-3 py-1 rounded-full border text-sm transition-all duration-200 flex items-center gap-1 ${
-                            validSelectedSubjectIds.includes(subject.id)
-                              ? "bg-gradient-to-r from-blue-400 to-purple-500 text-white border-transparent"
-                              : "bg-white/10 text-white border-white/30 hover:bg-white/20"
-                          }`}
-                          disabled={disabled}
-                        >
-                          {subject.name} ({subject.code})
-                          <span className="ml-1 text-xs text-gray-300">G{subject.grade}</span>
-                          {validSelectedSubjectIds.includes(subject.id) && (
-                            <svg
-                              className="w-4 h-4 ml-1 text-white"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          )}
-                        </button>
-                      ))}
-                  </div>
-                </div>
-              )
-          )}
         </div>
-      )}
+
+        {/* Categories & subjects */}
+        {loading ? (
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-blue-500" />
+            Loading subjects...
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {categories.map((cat) => (
+                <button
+                  key={cat.name || "unknown"}
+                  type="button"
+                  onClick={() =>
+                    setExpanded(expanded === cat.name ? null : cat.name)
+                  }
+                  className={`inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-medium transition-all ${
+                    expanded === cat.name
+                      ? "bg-slate-900 text-slate-50 border-slate-900 shadow-sm"
+                      : "bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100"
+                  }`}
+                  disabled={disabled}
+                >
+                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
+                  {cat.name}
+                </button>
+              ))}
+            </div>
+
+            {categories.map(
+              (cat) =>
+                expanded === cat.name && (
+                  <div
+                    key={(cat.name ? cat.name : "unknown") + "-subjects"}
+                    className="rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3"
+                  >
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-sm font-semibold text-slate-900">
+                          {cat.name} subjects
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          Click to add or remove subjects from this category.
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-white px-3 py-1 text-[11px] font-medium text-slate-500 border border-slate-200">
+                        {cat.subjects.length} available
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-2 max-h-52 overflow-y-auto pr-1">
+                      {cat.subjects
+                        .filter((subject) =>
+                          gradeFilter === null
+                            ? true
+                            : subject.grade === gradeFilter
+                        )
+                        .map((subject) => {
+                          const isSelected = validSelectedSubjectIds.includes(
+                            subject.id
+                          );
+                          return (
+                            <button
+                              key={subject.id || "unknown"}
+                              type="button"
+                              onClick={() => toggleSubject(subject.id)}
+                              className={`group px-3 py-1.5 rounded-full border text-xs transition-all flex items-center gap-1.5 ${
+                                isSelected
+                                  ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                                  : "bg-white text-slate-800 border-slate-200 hover:bg-slate-50"
+                              }`}
+                              disabled={disabled}
+                            >
+                              <span className="truncate max-w-[160px]">
+                                {subject.name}{" "}
+                                <span
+                                  className={
+                                    isSelected
+                                      ? "text-blue-100"
+                                      : "text-slate-400"
+                                  }
+                                >
+                                  ({subject.code}) · G{subject.grade}
+                                </span>
+                              </span>
+                              {isSelected && (
+                                <svg
+                                  className="w-3.5 h-3.5 text-white"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              )}
+                            </button>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 } 

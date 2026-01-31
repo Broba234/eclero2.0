@@ -13,7 +13,6 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: 'userEmail is required' }, { status: 400 });
     }
 
-    console.log('[AVAILABILITY_UPDATE] Updating availability for user:', userEmail, 'to:', isAvailableNow);
 
     // If turning OFF, but schedule says they're active now, block and instruct to use calendar
     if (isAvailableNow === false) {
@@ -49,7 +48,6 @@ export async function PATCH(req: Request) {
       select: { id: true, email: true, isAvailableNow: true }
     });
 
-    console.log('[AVAILABILITY_UPDATE] Successfully updated profile:', updatedProfile);
 
     return NextResponse.json(updatedProfile);
   } catch (error: any) {

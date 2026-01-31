@@ -16,7 +16,6 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'StudentId parameter is required' }, { status: 400 });
     }
 
-    console.log('Fetching sessions for student:', studentId);
 
     // Fetch sessions where user is the student
     const { data: sessions, error: fetchError } = await supabase
@@ -34,9 +33,7 @@ export async function GET(request: NextRequest) {
       .eq('student_id', studentId)
       .order('created_at', { ascending: false });
 
-    if (fetchError) {
-      console.error('Student sessions fetch error:', fetchError);
-      console.error('Full error details:', JSON.stringify(fetchError, null, 2));
+    if (fetchError) { 
       return NextResponse.json({ 
         error: 'Failed to fetch sessions', 
         details: fetchError.message,
@@ -44,14 +41,13 @@ export async function GET(request: NextRequest) {
       }, { status: 500 });
     }
 
-    console.log('Sessions fetched successfully:', sessions?.length || 0, 'sessions');
+    console.log("sessions", sessions);
 
     return NextResponse.json({ 
       success: true, 
       sessions: sessions || []
     });
   } catch (err) {
-    console.error('Server error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 } 

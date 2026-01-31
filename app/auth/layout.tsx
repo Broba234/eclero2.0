@@ -19,7 +19,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {/* Right links */}
         <div className="hidden sm:flex items-center gap-4 absolute right-8 top-1/2 -translate-y-1/2">
           <a href="#" className="text-gray-700 hover:text-blue-600 font-medium">About</a>
-          <a href="/auth/login" className="ml-2 py-1.5 px-3 bg-blue-600 text-white rounded-full font-semibold hover:bg-blue-700 transition">Log In</a>
+          <a href="/auth/login" className="ml-2 py-1.5 px-3 bg-[#1559C6] text-white rounded-full font-semibold hover:bg-blue-700 transition">Log In</a>
         </div>
         {/* Mobile: Hamburger */}
         <div className="sm:hidden absolute right-3 top-1/2 -translate-y-1/2">
@@ -43,7 +43,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
               <a onClick={() => setMenuOpen(false)} href="/#how-it-works" className="px-3 py-3 rounded-lg text-gray-800 hover:bg-gray-50">How it Works</a>
               <a onClick={() => setMenuOpen(false)} href="#" className="px-3 py-3 rounded-lg text-gray-800 hover:bg-gray-50">Pricing</a>
               <a onClick={() => setMenuOpen(false)} href="#" className="px-3 py-3 rounded-lg text-gray-800 hover:bg-gray-50">About</a>
-              <a onClick={() => setMenuOpen(false)} href="/auth/login" className="mt-1 px-3 py-3 rounded-lg bg-blue-600 text-white text-center font-semibold hover:bg-blue-700">Log In</a>
+              <a onClick={() => setMenuOpen(false)} href="/auth/login" className="mt-1 px-3 py-3 rounded-lg bg-[#1559C6] text-white text-center font-semibold hover:bg-blue-700">Log In</a>
             </div>
           </div>
         </div>

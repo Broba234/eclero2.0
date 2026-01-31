@@ -37,7 +37,6 @@ const DropzoneComponent: React.FC = () => {
   const handleFiles = (fileList: FileList) => {
     const newFiles = Array.from(fileList);
     setFiles(prevFiles => [...prevFiles, ...newFiles]);
-    console.log("Files selected:", newFiles);
   };
 
   return (

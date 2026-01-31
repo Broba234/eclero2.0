@@ -25,22 +25,32 @@ export async function GET(req: Request) {
       resolvedTutorId = profile.id;
     }
 
-    const slots = await prisma.tutorAvailability.findMany({
-      where: { tutorId: resolvedTutorId, isActive: true },
-      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+  let slots = await prisma.tutorAvailability.findMany({
+  where: { 
+    tutor_id: resolvedTutorId, 
+    is_active: true, 
+    end_date: { not: null },
+    start_date: { not: null }
+  },
+  include: {
+    profileSubject: {
+      select: {
+        profile_id: true,
+        subject_id: true,
+        duration_1: true,
+        duration_2: true,
+        duration_3: true,
+        price_1: true,
+        price_2: true,
+        price_3: true,
+      }
+    }
+  },
+      orderBy: [{ day_of_week: 'asc' }, { start_time: 'asc' }],
     });
 
-    const response = {
-      timezone: slots[0]?.timezone || 'UTC',
-      slots: slots.map(s => ({
-        id: s.id,
-        dayOfWeek: s.dayOfWeek,
-        start: toTimeString(s.startTime),
-        end: toTimeString(s.endTime),
-      })),
-    };
 
-    return NextResponse.json(response);
+     return new Response(JSON.stringify(slots), { status: 200 });
   } catch (error: any) {
     console.error('[TA_GET] Error:', error);
     return NextResponse.json({ error: 'Internal Server Error', details: error?.message || error }, { status: 500 });

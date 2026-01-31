@@ -1,74 +1,68 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-type SlotInput = { dayOfWeek: number; start: string; end: string };
 
-function isValidTimeString(t: string) {
-  return /^\d{2}:\d{2}$/.test(t);
-}
+// Build a Date from date (YYYY-MM-DD) and time (HH:mm) in local time to preserve wall clock
 
+// For @db.Time fields we can still store as UTC time-only
 function toTimeDate(time: string): Date {
-  // Expect HH:mm, store as 1970-01-01T..Z to preserve time component only
-  return new Date(`1970-01-01T${time}:00.000Z`);
+  const [hh, mm] = time.split(":").map(Number);
+  return new Date(Date.UTC(1970, 0, 1, hh, mm, 0, 0));
 }
 
 export async function POST(req: Request) {
   try {
-    const { userEmail, tutorId, timezone, slots } = await req.json();
+    const { email, newEvent } = await req.json();
 
-    if (!userEmail && !tutorId) {
-      return NextResponse.json({ error: 'userEmail or tutorId is required' }, { status: 400 });
-    }
-    if (!timezone || typeof timezone !== 'string') {
-      return NextResponse.json({ error: 'timezone is required' }, { status: 400 });
-    }
-    if (!Array.isArray(slots)) {
-      return NextResponse.json({ error: 'slots must be an array' }, { status: 400 });
+    if (!email && !newEvent) {
+      return NextResponse.json({ error: "userEmail or tutorId is required" }, { status: 400 });
     }
 
     // Resolve tutor id
-    let resolvedTutorId: string | null = tutorId ?? null;
-    if (!resolvedTutorId && userEmail) {
-      const profile = await prisma.profiles.findUnique({ where: { email: userEmail }, select: { id: true } });
-      if (!profile) return NextResponse.json({ error: 'Tutor not found' }, { status: 404 });
+    let resolvedTutorId: any;
+    if (email) {
+      const profile = await prisma.profiles.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (!profile) return NextResponse.json({ error: "Tutor not found" }, { status: 404 });
       resolvedTutorId = profile.id;
     }
     if (!resolvedTutorId) {
-      return NextResponse.json({ error: 'Could not resolve tutorId' }, { status: 400 });
+      return NextResponse.json({ error: "Could not resolve tutorId" }, { status: 400 });
     }
+const startDate = new Date(`${newEvent.startDate}T${newEvent.start_time}:00`);
+const endDate = new Date(`${newEvent.endDate}T${newEvent.end_time}:00`);
 
-    // Validate slots
-    const toCreate: SlotInput[] = [];
-    for (const s of slots as SlotInput[]) {
-      if (typeof s.dayOfWeek !== 'number' || s.dayOfWeek < 0 || s.dayOfWeek > 6) {
-        return NextResponse.json({ error: 'Invalid dayOfWeek' }, { status: 400 });
-      }
-      if (!isValidTimeString(s.start) || !isValidTimeString(s.end)) {
-        return NextResponse.json({ error: 'Invalid time format (HH:mm expected)' }, { status: 400 });
-      }
-      if (s.start === s.end) continue;
-      toCreate.push(s);
+        if (newEvent.subject_id.trim()) {
+      const existing = await prisma.profilesOnSubjects.findFirst({
+        where: {
+          profile_id: resolvedTutorId,
+          subject_id: newEvent.subject_id.trim()
+        }
+      });
+        await prisma.tutorAvailability.create({
+          data: {
+            tutor_id: resolvedTutorId,
+            subject_id: newEvent.subject_id.trim(),
+            subject: newEvent.title,
+            duration_1: newEvent.duration_1,
+            duration_2: newEvent.duration_2,
+            duration_3: newEvent.duration_3,
+            start_time: toTimeDate(newEvent.start_time),
+            end_time: toTimeDate(newEvent.end_time),
+            start_date: startDate.toISOString(),
+            end_date: endDate.toISOString(),
+          }
+        });
     }
-
-    // Replace existing active slots
-    await prisma.$transaction([
-      prisma.tutorAvailability.deleteMany({ where: { tutorId: resolvedTutorId } }),
-      prisma.tutorAvailability.createMany({
-        data: toCreate.map(s => ({
-          tutorId: resolvedTutorId!,
-          dayOfWeek: s.dayOfWeek,
-          startTime: toTimeDate(s.start),
-          endTime: toTimeDate(s.end),
-          timezone,
-          isActive: true,
-        })),
-      }),
-    ]);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
-    console.error('[TA_SAVE] Error:', error);
-    return NextResponse.json({ error: 'Internal Server Error', details: error?.message || error }, { status: 500 });
+    console.error("[TA_SAVE] Error:", error);
+    return NextResponse.json(
+      { error: "Internal Server Error", details: error?.message || error },
+      { status: 500 }
+    );
   }
 }
-
