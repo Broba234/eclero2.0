@@ -1,21 +1,25 @@
 "use client";
-import { ParallaxProvider } from 'react-scroll-parallax';
-import Navbar from '@/components/landing/Navbar';
-import Hero from '@/components/landing/Hero';
-import HowItWorks from '@/components/landing/HowItWorks';
-import About from '@/components/landing/About';
 import Footer from '@/components/landing/Footer';
+import RoleChoiceSection from '@/components/landing/RoleChoiceSection';
+import NewHero from '@/components/landing/NewHero';
+import OurMission from '@/components/landing/OurMission';
+import HeaderSmooth from '@/components/landing/Header';
 
 export default function Home() {
     return (
-        <ParallaxProvider>
-            <Navbar />
+        <>
+            {/* <Navbar />
+             */}
+                <HeaderSmooth />
             <main>
-                <Hero />
-                <HowItWorks />
-                <About />
+        
+                <NewHero />
+                <RoleChoiceSection />
+                <OurMission />
+                {/* <HowItWorks /> */}
+                {/* <About /> */}
             </main>
             <Footer />
-        </ParallaxProvider>
+        </>
     );
 }

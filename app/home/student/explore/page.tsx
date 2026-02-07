@@ -10,6 +10,12 @@ export type Subjects = {
   code: string;
   grade: number;
   category?: string;
+  duration_1?: number | string | null;
+  duration_2?: number | string | null;
+  duration_3?: number | string | null;
+  price_1?: number | string | null;
+  price_2?: number | string | null;
+  price_3?: number | string | null;
 };
 
 type CategoryGroup = {
@@ -100,14 +106,18 @@ const TutorSection = ({
               return (
                 <div
                   key={tutor.id || "unknown"}
-                  className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow duration-200"
+                  className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xl hover:shadow-2xl transition-shadow duration-200"
                 >
                   <div className="flex flex-col md:flex-row gap-6">
                     {/* Left Section - Profile & Quick Info */}
                     <div className="flex items-start gap-4 md:w-1/3">
                       <div className="relative">
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#1089d3] to-[#12B1D1] flex items-center justify-center text-white font-bold text-xl">
-                          {tutor.name?.charAt(0) || "T"}
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-r from-[#1089d3] to-[#12B1D1] p-1 shadow-md">
+                          <img
+                            src={tutor.avatar || "/default-avatar.png"}
+                            alt={tutor.name || "Tutor avatar"}
+                            className="w-full h-full rounded-full object-cover bg-gray-100"
+                          />
                         </div>
                         {tutor.derivedActiveNow === true && (
                           <div className="absolute -top-1 -right-1">
@@ -397,8 +407,11 @@ export default function ExploreTutors() {
       : [];
 
   return (
-    <div className="max-w-5xl mx-auto py-10 px-4">
-      <h1 className="text-4xl font-bold mb-6 text-gray-900">Find a Tutor</h1>
+    <div className="max-w-7xl mx-auto py-10 px-4">
+      <h1 className="text-3xl font-bold text-gray-900">Find a Tutor</h1>
+      <p className="mt-1 mb-6 text-gray-600">
+        Explore tutors for your selected subjects and book sessions that fit your schedule.
+      </p>
 
       {/* Filter & Active Now */}
       <div className="mb-6 flex flex-wrap items-center gap-3">

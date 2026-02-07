@@ -7,6 +7,7 @@ export interface BookSessionParams {
   notes?: string;
   date: string;
   amount: any;
+  subjectId?: string;
 }
 
 export interface SessionResponse {
@@ -31,6 +32,7 @@ export const bookSession = async (params: BookSessionParams): Promise<SessionRes
         notes: params.notes,
         date: params.date,
         amount: params.amount,
+        subjectId: params.subjectId,
       }),
     });
 

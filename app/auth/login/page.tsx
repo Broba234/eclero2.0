@@ -77,7 +77,7 @@ function LoginContent() {
     }
 
     return (
-        <main className="min-h-screen w-full flex flex-col items-center justify-center px-4 bg-gradient-to-b from-[#F8F9FD] to-gray-400">
+        <main className="min-h-screen w-full pt-[100px] md:pt-0 flex flex-col items-center justify-center px-4 bg-gradient-to-b from-[#F8F9FD] to-gray-400">
         <div className="max-w-2xl w-full bg-gradient-to-b from-white via-[#f4f7fb] to-white rounded-[40px] p-6 border-4 border-white shadow-[rgba(133,189,215,0.878)_0px_30px_30px_-20px]">
         <div className="text-center">
   {/* Icon Header */}
@@ -137,12 +137,12 @@ function LoginContent() {
             </button>
           </form>
   
-          <div className="mt-6 flex gap-3 items-center justify-start">
+          <div className="mt-6 flex gap-3 items-center justify-start flex-col sm:flex-row">
           <p className="text-gray-600 text-sm">
     Don't have an account? Sign up as:
   </p>
   
-  <div className="flex flex-col sm:flex-row gap-3 justify-center items-center">
+  <div className="flex flex-row gap-3 justify-center items-center">
     <Link
       href={`/auth/register?role=student`}
       className="text-[#1559C6] hover:text-[#1559C6] transition text-sm underline"

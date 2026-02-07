@@ -1,5 +1,6 @@
 import { bookSession } from "@/lib/bookingUtils";
-import React, { useMemo, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
+import React, { useEffect, useMemo, useState } from "react";
 
 interface TutorProfile {
   id: string;
@@ -8,11 +9,20 @@ interface TutorProfile {
   bio?: string;
   email?: string;
   phone?: string;
-  hourlyRate?: number;
   education?: { degree: string; institution: string; year: number }[];
   experience?: { title: string; description: string; years: number }[];
   rating?: number;
-  subjects?: { name: string; code: string }[];
+  subjects?: {
+    id?: string;
+    name: string;
+    code: string;
+    duration_1?: number | string | null;
+    duration_2?: number | string | null;
+    duration_3?: number | string | null;
+    price_1?: number | string | null;
+    price_2?: number | string | null;
+    price_3?: number | string | null;
+  }[];
   isAvailableNow?: boolean;
   availableSlots?: {
     subject_id?: string;
@@ -44,6 +54,12 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
   const [bookingTopic, setBookingTopic] = useState("");
   const [bookingNotes, setBookingNotes] = useState("");
+  const [studentSubjects, setStudentSubjects] = useState<
+    { id: string; name: string; code: string }[]
+  >([]);
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(
+    null
+  );
   const timeZoneLabel =
     Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
   const todayLabel = new Date().toLocaleDateString("en-US", {
@@ -58,6 +74,96 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
     { value: "1" as const, label: "1 Hour" },
     { value: "1.5" as const, label: "1.5 Hours" },
   ];
+
+  const selectedTutorSubject = useMemo(() => {
+    if (!Array.isArray(tutor.subjects) || tutor.subjects.length === 0) {
+      return undefined;
+    }
+    if (selectedSubjectId) {
+      const match = tutor.subjects.find(
+        (s) => s.id && s.id === selectedSubjectId
+      );
+      if (match) return match;
+    }
+    return tutor.subjects[0];
+  }, [tutor.subjects, selectedSubjectId]);
+
+  const studentSubjectsForTutor = useMemo(() => {
+    if (!Array.isArray(studentSubjects) || studentSubjects.length === 0) {
+      return [];
+    }
+    if (!Array.isArray(tutor.subjects) || tutor.subjects.length === 0) {
+      return studentSubjects;
+    }
+    const tutorIds = new Set(
+      tutor.subjects
+        .map((s) => s.id)
+        .filter((id): id is string => typeof id === "string" && id.length > 0)
+    );
+    const filtered = studentSubjects.filter((s) => tutorIds.has(s.id));
+    return filtered.length > 0 ? filtered : studentSubjects;
+  }, [studentSubjects, tutor.subjects]);
+
+  useEffect(() => {
+    const fetchStudentSubjects = async () => {
+      try {
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+        if (!user || error || !user.email) return;
+
+        const res = await fetch(
+          `/api/profiles/get-full?email=${encodeURIComponent(user.email)}`
+        );
+        if (!res.ok) return;
+        const profile = await res.json();
+
+        const rawSubjects = Array.isArray(profile?.subjects)
+          ? profile.subjects
+          : [];
+        const normalized = rawSubjects
+          .map((s: any) => {
+            if (s && typeof s.id === "string") return s;
+            if (s?.Subjects && typeof s.Subjects.id === "string")
+              return s.Subjects;
+            if (s?.subject && typeof s.subject.id === "string")
+              return s.subject;
+            return undefined;
+          })
+          .filter(
+            (s: any): s is { id: string; name: string; code: string } =>
+              !!s &&
+              typeof s.id === "string" &&
+              s.id.length > 0 &&
+              typeof s.name === "string" &&
+              typeof s.code === "string"
+          );
+
+        setStudentSubjects(normalized);
+        if (!selectedSubjectId && normalized.length > 0) {
+          setSelectedSubjectId(normalized[0].id);
+        }
+      } catch {
+        setStudentSubjects([]);
+      }
+    };
+
+    fetchStudentSubjects();
+  }, [selectedSubjectId]);
+
+  const getSessionPrice = (durationValue: string) => {
+    if (!selectedTutorSubject) return null;
+    const getNumber = (v: any) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : null;
+    };
+
+    if (durationValue === "0.5") return getNumber(selectedTutorSubject.price_1);
+    if (durationValue === "1") return getNumber(selectedTutorSubject.price_2);
+    if (durationValue === "1.5") return getNumber(selectedTutorSubject.price_3);
+    return null;
+  };
 
   const formatTimeLabel = (minutes: number) => {
     const hour24 = Math.floor(minutes / 60) % 24;
@@ -119,6 +225,16 @@ console.log("timeSlots", timeSlots);
       
       const bookingTime = minutesToTimeString(selectedTime);
       
+      const amount =
+        getSessionPrice(String(selectedDuration)) ?? selectedDuration;
+
+      const subjectIdForBooking =
+        selectedSubjectId && selectedSubjectId.length > 0
+          ? selectedSubjectId
+          : selectedTutorSubject && typeof selectedTutorSubject.id === "string"
+          ? selectedTutorSubject.id
+          : undefined;
+
       const result = await bookSession({
         tutorId: tutor.id,
         studentId: userId,
@@ -127,7 +243,8 @@ console.log("timeSlots", timeSlots);
         topic: bookingTopic.trim() || undefined,
         notes: bookingNotes.trim() || undefined,
         date: new Date().toISOString(),
-        amount: selectedDuration,
+        amount,
+        subjectId: subjectIdForBooking,
       });
   
       if (result.success) {
@@ -159,22 +276,12 @@ console.log("tutor", tutor);
       {/* Profile Section */}
       <div className="flex flex-col items-center md:items-start md:w-1/3">
         <div className="relative mb-6">
-          <div className="w-36 h-36 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
-            <svg
-              width="64"
-              height="64"
-              viewBox="0 0 64 64"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="text-white"
-            >
-              <circle cx="32" cy="32" r="28" fill="white" fillOpacity="0.2" />
-              <circle cx="32" cy="24" r="8" fill="white" />
-              <path
-                d="M24 40C24 36 32 32 32 32C32 32 40 36 40 40V44H24V40Z"
-                fill="white"
-              />
-            </svg>
+          <div className="w-36 h-36 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-lg">
+            <img
+              src={tutor.avatar || "/default-avatar.png"}
+              alt={tutor.name || "Tutor avatar"}
+              className="w-full h-full rounded-full object-cover bg-gray-100"
+            />
           </div>
           <div className="absolute -bottom-3 left-1/2 transform -translate-x-1/2">
             <div className="bg-white px-4 py-1.5 rounded-full shadow-md border border-gray-100">
@@ -187,7 +294,7 @@ console.log("tutor", tutor);
         
         <div className="text-center md:text-left w-full">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">{tutor.name}</h2>
-          <div className="flex items-center justify-center md:justify-start gap-2 mb-4">
+          <div className="flex items-center justify-center md:justify-start gap-2 mb-2">
             {tutor.rating && (
               <>
                 <div className="flex items-center">
@@ -254,6 +361,17 @@ console.log("tutor", tutor);
                   }`}
                 >
                   {option.label}
+                  {getSessionPrice(String(option.value)) !== null && (
+                    <div
+                      className={`mt-1 text-xs ${
+                        selectedDuration === option.value
+                          ? "text-indigo-50"
+                          : "text-gray-500"
+                      }`}
+                    >
+                      ${getSessionPrice(String(option.value))!.toFixed(2)} / session
+                    </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -307,6 +425,28 @@ console.log("tutor", tutor);
                   Session Details
                 </label>
                 <div className="space-y-4">
+                  {studentSubjectsForTutor.length > 0 && (
+                    <div>
+                      <div className="text-xs font-medium text-gray-600 mb-2">
+                        Subject
+                      </div>
+                      <select
+                        value={selectedSubjectId ?? ""}
+                        onChange={(e) =>
+                          setSelectedSubjectId(
+                            e.target.value || selectedSubjectId
+                          )
+                        }
+                        className="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl text-sm text-gray-900 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                      >
+                        {studentSubjectsForTutor.map((subject) => (
+                          <option key={subject.id} value={subject.id}>
+                            {subject.name} ({subject.code})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                   <div>
                     <div className="text-xs font-medium text-gray-600 mb-2">
                       Topic (optional)
@@ -362,7 +502,19 @@ console.log("tutor", tutor);
                         <span className="font-semibold">Selected:</span> {formatTimeLabel(selectedTime)}
                       </div>
                       <div className="font-bold text-blue-700">
-                        {selectedDuration} min
+                        {selectedDuration === "0.5"
+                          ? "30 min"
+                          : selectedDuration === "1"
+                          ? "60 min"
+                          : selectedDuration === "1.5"
+                          ? "90 min"
+                          : `${Number(selectedDuration) * 60} min`}
+                        {getSessionPrice(String(selectedDuration)) !== null && (
+                          <span className="ml-2">
+                            • $
+                            {getSessionPrice(String(selectedDuration))!.toFixed(2)}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -31,6 +31,8 @@ interface LiveKitRoomProps {
 const LiveKitRoom: React.FC<LiveKitRoomProps> = ({
   roomName,
   userIdentity,
+  userName,
+  userRole,
   onDisconnect,
   isOpen,
 }) => {
@@ -85,14 +87,14 @@ const LiveKitRoom: React.FC<LiveKitRoomProps> = ({
         style={{ height: '100vh' }}
         data-lk-theme="default"
       >
-        <MainContent onDisconnect={onDisconnect} />
+        <MainContent onDisconnect={onDisconnect} userRole={userRole} />
         <RoomAudioRenderer />
       </LKRoom>
     </div>
   );
 };
 
-function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
+function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; userRole: 'tutor' | 'student' }) {
   const [activeView, setActiveView] = useState('whiteboard');
   const [sharedFile, setSharedFile] = useState<{ url: string; name: string; type: string } | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -100,7 +102,7 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
   const pendingSceneRef = React.useRef<{ elements: any[]; files?: any } | null>(null);
   const requestedSceneRef = React.useRef(false);
   const [isExcalidrawReady, setIsExcalidrawReady] = useState(false);
-  
+
   // Screen sharing state
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [screenTrackRef, setScreenTrackRef] = useState<TrackReference | null>(null);
@@ -112,6 +114,11 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
     lastFrom: string;
     lastError: string;
   }>({ sent: 0, received: 0, lastType: '', lastFrom: '', lastError: '' });
+
+  // Remote pointer/cursor positions on the whiteboard
+  const [remotePointers, setRemotePointers] = useState<
+    Record<string, { x: number; y: number; updatedAt: number }>
+  >({});
 
   // Compatibility status
   const compatibilityStatus = BrowserCompatibility.getCompatibilityStatus();
@@ -143,50 +150,67 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
       try {
         const message = JSON.parse(new TextDecoder().decode(msg.payload));
         console.log('MainContent: Parsed message received:', message);
-          setDataStats((prev) => ({
-            ...prev,
-            received: prev.received + 1,
-            lastType: message?.type || 'unknown',
-            lastFrom: msg?.from?.identity || 'unknown',
-          }));
-          if (message.type === 'file_share') {
-            setSharedFile(message.payload);
-            setActiveView('file');
-          } else if (message.type === 'excalidraw_update') {
-            try {
-              const { elements = [], files } = message.payload || {};
-              applyExcalidrawScene({ elements, files });
-            } catch (error) {
-              console.error('Error applying excalidraw update:', error);
-            }
-          } else if (message.type === 'excalidraw_request') {
-            try {
-              const api = excalidrawRef.current;
-              const elements = api?.getSceneElements?.() || [];
-              const files = api?.getFiles?.() || {};
-              const clean = getCleanElements(elements);
+        setDataStats((prev) => ({
+          ...prev,
+          received: prev.received + 1,
+          lastType: message?.type || 'unknown',
+          lastFrom: msg?.from?.identity || 'unknown',
+        }));
 
-              const payload = {
-                elements: clean,
-                files,
-              };
-
-              const response = {
-                type: 'excalidraw_state',
-                payload,
-              };
-              sendDataSafe(new TextEncoder().encode(JSON.stringify(response)));
-            } catch (error) {
-              console.error('Error responding to excalidraw state request:', error);
-            }
-          } else if (message.type === 'excalidraw_state') {
-            try {
-              const { elements = [], files } = message.payload || {};
-              applyExcalidrawScene({ elements, files });
-            } catch (error) {
-              console.error('Error applying excalidraw state:', error);
-            }
+        if (message.type === 'file_share') {
+          setSharedFile(message.payload);
+          setActiveView('file');
+        } else if (message.type === 'excalidraw_update') {
+          try {
+            const { elements = [], files } = message.payload || {};
+            applyExcalidrawScene({ elements, files });
+          } catch (error) {
+            console.error('Error applying excalidraw update:', error);
           }
+        } else if (message.type === 'excalidraw_request') {
+          try {
+            const api = excalidrawRef.current;
+            const elements = api?.getSceneElements?.() || [];
+            const files = api?.getFiles?.() || {};
+
+            const payload = {
+              elements,
+              files,
+            };
+
+            const response = {
+              type: 'excalidraw_state',
+              payload,
+            };
+            sendDataSafe(new TextEncoder().encode(JSON.stringify(response)));
+          } catch (error) {
+            console.error('Error responding to excalidraw state request:', error);
+          }
+        } else if (message.type === 'excalidraw_state') {
+          try {
+            const { elements = [], files } = message.payload || {};
+            applyExcalidrawScene({ elements, files });
+          } catch (error) {
+            console.error('Error applying excalidraw state:', error);
+          }
+        } else if (message.type === 'pointer_update') {
+          const fromIdentity = msg?.from?.identity || 'unknown';
+          const { x, y } = message.payload || {};
+          if (typeof x === 'number' && typeof y === 'number' && fromIdentity) {
+            setRemotePointers((prev) => ({
+              ...prev,
+              [fromIdentity]: { x, y, updatedAt: Date.now() },
+            }));
+          }
+        } else if (message.type === 'session_end') {
+          // Tutor has ended the session; disconnect this client.
+          console.log('Session end signal received, disconnecting from room.');
+          try {
+            room?.disconnect();
+          } catch (disconnectError) {
+            console.error('Error disconnecting room after session_end:', disconnectError);
+          }
+        }
       } catch (e) {
         console.error('MainContent: Error parsing message:', e);
       }
@@ -208,6 +232,22 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
     },
     [sendData],
   );
+
+  // Periodically prune stale remote pointers so we don't leak memory
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setRemotePointers((prev) => {
+        const now = Date.now();
+        const entries = Object.entries(prev).filter(
+          ([, value]) => now - value.updatedAt < 8000,
+        );
+        if (entries.length === Object.keys(prev).length) return prev;
+        return Object.fromEntries(entries);
+      });
+    }, 4000);
+
+    return () => window.clearInterval(interval);
+  }, []);
 
   // Screen sharing event listeners
   useEffect(() => {
@@ -450,6 +490,26 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
     }
   };
 
+  const handleEndOrLeaveSession = async () => {
+    try {
+      // If tutor ends the session, notify all participants to disconnect.
+      if (userRole === 'tutor') {
+        const message = {
+          type: 'session_end',
+        };
+        await sendDataSafe(new TextEncoder().encode(JSON.stringify(message)));
+      }
+    } catch (e) {
+      console.error('Error broadcasting session_end message:', e);
+    } finally {
+      try {
+        room?.disconnect();
+      } catch (disconnectError) {
+        console.error('Error disconnecting room on end/leave:', disconnectError);
+      }
+    }
+  };
+
   return (
     <div className="relative h-full w-full">
       {/* Whiteboard/file/screen content within a smaller bezel */}
@@ -458,11 +518,17 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
         style={{ top: '0.5in', right: '0.5in', bottom: '0.5in', left: '0.5in' }}
       >
         {activeView === 'whiteboard' && (
-          <ExcalidrawWhiteboard
-            sendData={sendDataSafe}
-            excalidrawRef={excalidrawRef}
-            onReady={() => setIsExcalidrawReady(true)}
-          />
+          <>
+            <ExcalidrawWhiteboard
+              sendData={sendDataSafe}
+              excalidrawRef={excalidrawRef}
+              onReady={() => setIsExcalidrawReady(true)}
+            />
+            <PointerOverlay
+              excalidrawRef={excalidrawRef}
+              pointers={remotePointers}
+            />
+          </>
         )}
         {activeView === 'file' && sharedFile && (
           <FileViewer
@@ -550,9 +616,9 @@ function MainContent({ onDisconnect }: { onDisconnect?: () => void }) {
         </button>
         {onDisconnect && (
           <button
-            onClick={onDisconnect}
-            aria-label="End session"
-            title="End session"
+            onClick={handleEndOrLeaveSession}
+            aria-label={userRole === 'tutor' ? 'End session for everyone' : 'Leave session'}
+            title={userRole === 'tutor' ? 'End session for everyone' : 'Leave session'}
             className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur shadow-lg"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -644,6 +710,7 @@ function ExcalidrawWhiteboard({
 }) {
   const lastSentVersion = React.useRef(0);
   const debounceRef = React.useRef<number | null>(null);
+  const lastPointerSentAtRef = React.useRef(0);
 
   // CSS is already loaded via /public/excalidraw.css in layout.tsx
 
@@ -669,8 +736,8 @@ function ExcalidrawWhiteboard({
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
       debounceRef.current = window.setTimeout(async () => {
         try {
-          const clean = (elements || []).filter((el: any) => !el.isDeleted);
-          const version = getSceneVersion(clean as any);
+          const allElements = elements || [];
+          const version = getSceneVersion(allElements as any);
           if (version <= lastSentVersion.current) return;
           lastSentVersion.current = version;
 
@@ -683,7 +750,7 @@ function ExcalidrawWhiteboard({
           const message = {
             type: 'excalidraw_update',
             payload: {
-              elements: clean,
+              elements: allElements,
               files,
             },
           };
@@ -694,6 +761,31 @@ function ExcalidrawWhiteboard({
       }, 120);
     },
     [sendData, sanitizeFilesForSending],
+  );
+
+  const handlePointerUpdate = React.useCallback(
+    (payload: any) => {
+      try {
+        const pointer = payload?.pointer;
+        if (!pointer) return;
+        const now = Date.now();
+        // Throttle pointer updates to avoid spamming the data channel
+        if (now - lastPointerSentAtRef.current < 50) return;
+        lastPointerSentAtRef.current = now;
+
+        const message = {
+          type: 'pointer_update',
+          payload: {
+            x: pointer.x,
+            y: pointer.y,
+          },
+        };
+        sendData(new TextEncoder().encode(JSON.stringify(message)));
+      } catch (e) {
+        console.error('Error broadcasting pointer update:', e);
+      }
+    },
+    [sendData],
   );
 
   return (
@@ -707,11 +799,81 @@ function ExcalidrawWhiteboard({
           onChange={(elements: readonly any[], appState: any, files: any) =>
             onChange(elements as any[], appState, files)
           }
+          onPointerUpdate={handlePointerUpdate}
           theme="light"
           UIOptions={{ dockedSidebarBreakpoint: 0 }}
         />
       </div>
     </ExcalidrawErrorBoundary>
+  );
+}
+
+// Simple deterministic color helper for remote pointer indicators
+function getColorForIdentity(identity: string): string {
+  const colors = ['#f97316', '#22c55e', '#3b82f6', '#e11d48', '#a855f7', '#14b8a6'];
+  let hash = 0;
+  for (let i = 0; i < identity.length; i += 1) {
+    hash = (hash * 31 + identity.charCodeAt(i)) | 0;
+  }
+  const index = Math.abs(hash) % colors.length;
+  return colors[index];
+}
+
+interface PointerOverlayProps {
+  excalidrawRef: React.MutableRefObject<any | null>;
+  pointers: Record<string, { x: number; y: number; updatedAt: number }>;
+}
+
+function PointerOverlay({ excalidrawRef, pointers }: PointerOverlayProps) {
+  const [now, setNow] = React.useState(() => Date.now());
+
+  React.useEffect(() => {
+    const id = window.setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const api = excalidrawRef.current;
+  const appState = api?.getAppState?.();
+  if (!appState) return null;
+
+  const scrollX = appState.scrollX ?? 0;
+  const scrollY = appState.scrollY ?? 0;
+  const zoomValue =
+    typeof appState.zoom === 'number'
+      ? appState.zoom
+      : appState.zoom?.value ?? 1;
+
+  return (
+    <div className="pointer-events-none absolute inset-0 z-10">
+      {Object.entries(pointers).map(([identity, pointer]) => {
+        // Hide stale pointers
+        if (now - pointer.updatedAt > 5000) return null;
+
+        const screenX = (pointer.x + scrollX) * zoomValue;
+        const screenY = (pointer.y + scrollY) * zoomValue;
+        const color = getColorForIdentity(identity);
+
+        return (
+          <div
+            key={identity}
+            className="absolute"
+            style={{
+              transform: `translate(${screenX}px, ${screenY}px)`,
+            }}
+          >
+            <div
+              className="w-3 h-3 rounded-full border-2 bg-white shadow"
+              style={{ borderColor: color }}
+            />
+            <div className="mt-1 px-1.5 py-0.5 rounded text-[10px] leading-none bg-black/70 text-white whitespace-nowrap">
+              {identity}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 

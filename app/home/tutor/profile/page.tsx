@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import TiptapEditor from "@/components/RichTextEditor";
@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import SubjectSelectProfile from "@/components/ui/components/SubjectSelectProfile";
 import WizardTimeSlot from "@/components/ui/components/WizardTimeSlot";
 import UpdateProfileTimeSlot from "@/components/ui/components/UpdateProfileTimeSlot";
+import Image from "next/image";
 export type Subjects = {
   id: string;
   name: string;
@@ -33,6 +34,7 @@ export default function TutorProfile() {
   const [editBio, setEditBio] = useState("");
   const [editHourlyRate, setEditHourlyRate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [avatarUploading, setAvatarUploading] = useState(false);
   const router = useRouter();
 
   const [educationText, setEducationText] = useState<string>("");
@@ -155,6 +157,51 @@ export default function TutorProfile() {
     setProfile({ ...profile, education: educationText });
     setSaving(false);
   };
+  const handleAvatarChange = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !profile?.email) return;
+
+    try {
+      setAvatarUploading(true);
+
+      const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9-_.]/g, "-");
+      const filePath = `avatars/${profile.email}-${Date.now()}-${sanitizedFileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("eclero-storage")
+        .upload(filePath, file);
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("eclero-storage").getPublicUrl(filePath);
+
+      await fetch("/api/profiles/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: profile.email,
+          name: profile.name,
+          phone: profile.phone,
+          bio: profile.bio,
+          hourlyRate: profile.hourlyRate,
+          avatar: publicUrl,
+        }),
+      });
+
+      setProfile({ ...profile, avatar: publicUrl });
+    } catch (error: any) {
+      console.error("Error uploading avatar:", error?.message || error);
+      alert("Failed to upload profile picture. Please try again.");
+    } finally {
+      setAvatarUploading(false);
+      // Allow re-selecting the same file
+      event.target.value = "";
+    }
+  };
   const onSubjectsChange = (subjects: any) => {
     setError(false);
     setErrorMsg("");
@@ -236,16 +283,28 @@ export default function TutorProfile() {
     {/* LEFT COLUMN – Subjects */}
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-3">
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-12 h-12 rounded-2xl object-cover border border-gray-600 shadow-lg bg-gray-600 p-2"
-          viewBox="0 0 48 48"
-          fill="none"
-        >
-          <circle cx="24" cy="24" r="24" fill="#4b5563" />
-          <circle cx="24" cy="19" r="8" fill="#6b7280" />
-          <ellipse cx="24" cy="34" rx="12" ry="6" fill="#6b7280" />
-        </svg>
+        <div className="relative">
+          <div className="w-[150px] h-[150px] rounded-full bg-gradient-to-tr from-blue-500 to-indigo-500 p-1 shadow-lg">
+            <Image
+              src={profile.avatar || "/default-avatar.png"}
+              alt={profile.name}
+              className="w-full h-full rounded-full object-cover bg-gray-100"
+              fill
+            />
+          </div>
+          {/* {editMode1 && ( */}
+            <label className="absolute -bottom-3 min-w-[100px] left-1/2 -translate-x-1/2 px-2 py-1 rounded-full bg-gray-950/50 border border-gray-200 text-[10px] font-medium text-white shadow-sm cursor-pointer hover:bg-gray-50 hover:text-gray-900 transition">
+              {avatarUploading ? "Uploading..." : "Change photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarChange}
+                disabled={avatarUploading}
+              />
+            </label>
+          {/* )} */}
+        </div>
         <div>
           <h2 className="text-2xl font-semibold text-gray-900">
             {profile.name}

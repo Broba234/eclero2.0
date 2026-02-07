@@ -26,18 +26,23 @@ model audit_log_entries {
 /// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model flow_state {
-  id                     String                @id @db.Uuid
-  user_id                String?               @db.Uuid
-  auth_code              String
-  code_challenge_method  code_challenge_method
-  code_challenge         String
+  id                     String                 @id @db.Uuid
+  user_id                String?                @db.Uuid
+  auth_code              String?
+  code_challenge_method  code_challenge_method?
+  code_challenge         String?
   provider_type          String
   provider_access_token  String?
   provider_refresh_token String?
-  created_at             DateTime?             @db.Timestamptz(6)
-  updated_at             DateTime?             @db.Timestamptz(6)
+  created_at             DateTime?              @db.Timestamptz(6)
+  updated_at             DateTime?              @db.Timestamptz(6)
   authentication_method  String
-  auth_code_issued_at    DateTime?             @db.Timestamptz(6)
+  auth_code_issued_at    DateTime?              @db.Timestamptz(6)
+  invite_token           String?
+  referrer               String?
+  oauth_client_state_id  String?                @db.Uuid
+  linking_target_id      String?                @db.Uuid
+  email_optional         Boolean                @default(false)
   saml_relay_states      saml_relay_states[]
 
   @@index([created_at(sort: Desc)])
@@ -171,21 +176,22 @@ model oauth_client_states {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model oauth_clients {
-  id                   String                  @id @db.Uuid
-  client_secret_hash   String?
-  registration_type    oauth_registration_type
-  redirect_uris        String
-  grant_types          String
-  client_name          String?
-  client_uri           String?
-  logo_uri             String?
-  created_at           DateTime                @default(now()) @db.Timestamptz(6)
-  updated_at           DateTime                @default(now()) @db.Timestamptz(6)
-  deleted_at           DateTime?               @db.Timestamptz(6)
-  client_type          oauth_client_type       @default(confidential)
-  oauth_authorizations oauth_authorizations[]
-  oauth_consents       oauth_consents[]
-  sessions             sessions[]
+  id                         String                  @id @db.Uuid
+  client_secret_hash         String?
+  registration_type          oauth_registration_type
+  redirect_uris              String
+  grant_types                String
+  client_name                String?
+  client_uri                 String?
+  logo_uri                   String?
+  created_at                 DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at                 DateTime                @default(now()) @db.Timestamptz(6)
+  deleted_at                 DateTime?               @db.Timestamptz(6)
+  client_type                oauth_client_type       @default(confidential)
+  token_endpoint_auth_method String
+  oauth_authorizations       oauth_authorizations[]
+  oauth_consents             oauth_consents[]
+  sessions                   sessions[]
 
   @@index([deleted_at])
   @@schema("auth")
@@ -494,7 +500,7 @@ model ProfilesOnSubjects {
   duration_1 Float?    @default(0.5)
   Profiles   Profiles  @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   Subjects   Subjects  @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  tutorAvailabilities TutorAvailability[]
+
   @@id([profile_id, subject_id])
   @@schema("public")
 }
@@ -514,6 +520,7 @@ model Sessions {
   duration                               Float?
   amount                                 Float?
   date                                   DateTime? @db.Date
+  subject_id                             String?   @db.Uuid
   Profiles_Sessions_student_idToProfiles Profiles  @relation("Sessions_student_idToProfiles", fields: [student_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sessions_student_id_fkey")
   Profiles_Sessions_tutor_idToProfiles   Profiles  @relation("Sessions_tutor_idToProfiles", fields: [tutor_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "sessions_tutor_id_fkey")
 
@@ -530,7 +537,7 @@ model Subjects {
   created_at         DateTime?            @default(now()) @db.Timestamptz(6)
   updated_at         DateTime?            @default(now()) @db.Timestamptz(6)
   ProfilesOnSubjects ProfilesOnSubjects[]
-tutorAvailabilities TutorAvailability[]
+
   @@schema("public")
 }
 
@@ -552,8 +559,6 @@ model TutorAvailability {
   duration_1  Int?      @default(0) @db.SmallInt
   duration_2  Int?      @default(0) @db.SmallInt
   tutor       Profiles  @relation(fields: [tutor_id], references: [id], onDelete: Cascade)
-  subjects    Subjects? @relation(fields: [subject_id], references: [id], onDelete: Cascade) 
-  profileSubject ProfilesOnSubjects? @relation(fields: [tutor_id, subject_id], references: [profile_id, subject_id], onDelete: Cascade)
 
   @@index([day_of_week, start_time, end_time], map: "TutorAvailability_day_time_idx")
   @@index([tutor_id])

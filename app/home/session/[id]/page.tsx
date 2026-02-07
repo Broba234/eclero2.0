@@ -58,19 +58,25 @@ export default function SessionRoomPage() {
           return;
         }
         console.log('sessionId', sessionId);
-        const res = await fetch(`/api/sessions/update-status`, {
-          method: 'PATCH',
-          body: JSON.stringify({
-            sessionId: sessionId,
-            status: 'completed',
-            userId: user.id
-          })
-        })
-        if (res.ok) {
-          router.push(`/home/${role || "student"}`);
-        } else {
-          console.error('Failed to update session status');
+        // Only the tutor formally completes the session and updates backend status.
+        if (role === "tutor") {
+          const res = await fetch(`/api/sessions/update-status`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sessionId,
+              status: 'completed',
+              userId: user.id,
+            }),
+          });
+
+          if (!res.ok) {
+            console.error('Failed to update session status');
+          }
         }
+
+        // In all cases (tutor or student), navigate back to the appropriate home dashboard.
+        router.push(`/home/${role || "student"}`);
       }}
       isOpen={true}
     />

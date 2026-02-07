@@ -13,6 +13,7 @@ import {
   Heart,
   Palette,
   Users,
+  Search,
 } from "lucide-react";
 
 type SubjectKey = string;
@@ -82,6 +83,7 @@ export default function SubjectSelectProfile({
     }>
   >(initialSelectedSubjects);
   const [gradeFilter, setGradeFilter] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Group selected subjects by category for display
   const getSelectedSubjectsByCategory = () => {
@@ -180,10 +182,77 @@ export default function SubjectSelectProfile({
     ).length;
   };
 
+  // Search functionality - get all matching subjects across all categories
+  const getSearchResults = () => {
+    if (!searchQuery.trim()) return [];
+    
+    const query = searchQuery.toLowerCase();
+    const results: Array<{
+      subject: { id: string; name: string; code: string; grade?: number };
+      categoryName: string;
+      color: string;
+      icon: any;
+    }> = [];
+
+    categories.forEach(category => {
+      category.subjects.forEach(subject => {
+        if (
+          subject.name.toLowerCase().includes(query) ||
+          subject.code.toLowerCase().includes(query)
+        ) {
+          results.push({
+            subject,
+            categoryName: category.name,
+            color: getColorForCategory(category.name),
+            icon: getIconForCategory(category.name),
+          });
+        }
+      });
+    });
+
+    return results;
+  };
+
   const selectedByCategory = getSelectedSubjectsByCategory();
   const GRADES = [9, 10, 11, 12];
+  const searchResults = getSearchResults();
   return (
    <div className="space-y-8">
+  {/* Search Input */}
+  <div className="relative group">
+    <label className="block text-sm font-medium text-gray-900 mb-2">
+      Search Subjects
+    </label>
+    <div className="relative">
+      <div className="absolute -top-px left-4 right-4 h-px bg-gradient-to-r from-transparent via-purple-300 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity duration-300" />
+      <div className="relative bg-white rounded-2xl border-2 border-gray-200 p-[2px] transition-all duration-300 hover:border-purple-300 group-focus-within:border-purple-400 group-focus-within:shadow-lg group-focus-within:shadow-purple-100">
+        <div className="flex items-center">
+          <div className="pl-4 text-gray-400">
+            <Search size={18} />
+          </div>
+          <div className="flex-1 px-3">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by subject name or code..."
+              className="w-full py-2 px-0 border-0 focus:ring-0 focus:outline-none text-sm text-gray-900 placeholder:text-gray-400 bg-transparent"
+            />
+          </div>
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="pr-4 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+      <div className="absolute -bottom-px left-4 right-4 h-px bg-gradient-to-r from-transparent via-purple-200 to-transparent opacity-50" />
+    </div>
+  </div>
+
   <div className="relative group">
     <label className="block text-sm font-medium text-gray-900 mb-2">
       Select Grade
@@ -283,15 +352,61 @@ export default function SubjectSelectProfile({
     </div>
   )}
 
-  {/* Category Selection Grid */}
-  <div
-    className={`w-full ${
-      Object.keys(selectedByCategory).length > 0 ? "" : "mt-12"
-    } h-full grid grid-cols-12 gap-8`}
-  >
-    <main className="col-span-12">
-      <div className="grid grid-cols-2 gap-4 relative">
-        {categories.map((category, index) => {
+  {/* Search Results - Show when search query is present */}
+  {searchQuery.trim() && (
+    <div className="bg-white border border-gray-300 rounded-2xl shadow-md p-2 ">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+        Search Results {searchResults.length > 0 && `(${searchResults.length})`}
+      </h3>
+      
+      {searchResults.length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          <p>No subjects found matching &quot;{searchQuery}&quot;</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 max-h-[250px] overflow-y-auto scrollbar-hide">
+          {searchResults.map(({ subject, categoryName, color, icon: Icon }) => {
+            const selected = isSubjectSelected(subject.id);
+            
+            return (
+              <button
+                key={subject.id}
+                onClick={() => toggleSubject(subject)}
+                className={`rounded-xl border p-3 text-sm transition-all ${
+                  selected
+                    ? "bg-purple-600 text-white border-purple-600"
+                    : "border-gray-300 hover:border-gray-400 hover:shadow-sm hover:bg-gray-50"
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center gap-2">
+                <span className={`text-xs ${selected ? 'text-purple-200' : 'text-gray-500'}`}>
+                    {categoryName}
+                  </span>
+                 <div>
+                 <span className={` font-medium text-[10px] ${selected ? 'text-white' : 'text-gray-900'}`}>
+                    {subject.name} ({subject.code})
+                  </span>
+                 </div>
+
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  )}
+
+  {/* Category Selection Grid - Show when search is empty */}
+  {!searchQuery.trim() && (
+    <div
+      className={`w-full ${
+        Object.keys(selectedByCategory).length > 0 ? "" : "mt-12"
+      } h-full grid grid-cols-12 gap-8`}
+    >
+      <main className="col-span-12">
+        <div className="grid grid-cols-2 gap-4 relative">
+          {categories.map((category, index) => {
           const Icon = getIconForCategory(category.name);
           const color = getColorForCategory(category.name);
           const isActive = activeSubject === category.name;
@@ -410,11 +525,12 @@ export default function SubjectSelectProfile({
                 </div>
               )}
             </div>
-          );
-        })}
-      </div>
-    </main>
-  </div>
+            );
+          })}
+        </div>
+      </main>
+    </div>
+  )}
 </div>
   );
 }

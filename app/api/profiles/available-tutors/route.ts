@@ -38,7 +38,24 @@ export async function GET(req: Request) {
         isAvailableNow: true,
         rating: true,
         education: true,
-        subjects: { select: { Subjects: { select: { id: true, name: true, code: true, grade: true } } } },
+        subjects: {
+          select: {
+            duration_1: true,
+            duration_2: true,
+            duration_3: true,
+            price_1: true,
+            price_2: true,
+            price_3: true,
+            Subjects: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+                grade: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { name: "asc" },
     });
@@ -88,7 +105,15 @@ export async function GET(req: Request) {
     
     // Process tutors with availability check
     const tutorsWithDerived = tutors.map((t) => {
-      const subjects = t.subjects.map((ps: any) => ps.Subjects);
+      const subjects = t.subjects.map((ps: any) => ({
+        ...ps.Subjects,
+        duration_1: ps.duration_1,
+        duration_2: ps.duration_2,
+        duration_3: ps.duration_3,
+        price_1: ps.price_1,
+        price_2: ps.price_2,
+        price_3: ps.price_3,
+      }));
       const tutorSlots = slotsByTutorId.get(t.id) || [];
 
       const today = new Date();

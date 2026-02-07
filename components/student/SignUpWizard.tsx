@@ -92,7 +92,7 @@ const SignUpWizard = () => {
           }
           setSelectedSubjects(normalizedSubjects);
         }
-      } catch (error) {}
+      } catch (error) { }
     };
 
     fetchProfile();
@@ -168,12 +168,12 @@ const SignUpWizard = () => {
         body: JSON.stringify({
           email: profile.email,
         }),
-      }); 
+      });
       if (response.ok) {
         router.push("/home/student/explore");
       } else {
       }
-    } catch (e) {}
+    } catch (e) { }
   };
   // Returns true if ALL subjects have valid price and duration
   let is_all_selected = selectedSubjectsWithPrice.every(
@@ -219,11 +219,10 @@ const SignUpWizard = () => {
                 {/* Animated Gradient Overlay */}
                 <div className="absolute inset-0 overflow-hidden pointer-events-none">
                   <div
-                    className={`absolute w-full h-full bg-gradient-to-tr from-blue-50/30 via-transparent to-transparent transition-all duration-700 ease-out ${
-                      activeStep != 1
+                    className={`absolute w-full h-full bg-gradient-to-tr from-blue-50/30 via-transparent to-transparent transition-all duration-700 ease-out ${activeStep != 1
                         ? "opacity-100 translate-x-0 translate-y-0"
                         : "opacity-0 translate-x-full -translate-y-full"
-                    }`}
+                      }`}
                   />
                 </div>
 
@@ -235,13 +234,12 @@ const SignUpWizard = () => {
                       className={`flex items-start gap-4 p-4 cursor-pointer rounded-xl transition-all`}
                     >
                       <div
-                        className={`relative flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${
-                          activeStep === step.number
+                        className={`relative flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${activeStep === step.number
                             ? " text-white"
                             : step.number < activeStep
-                            ? " text-green-600"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
+                              ? " text-green-600"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
                       >
                         {/* <div className="absolute w-1 h-5 top-100 left-0 bg-gray-200"></div> */}
                         {step.number < activeStep ? (
@@ -400,7 +398,7 @@ const SignUpWizard = () => {
                             ease: "backOut",
                             delay: 0.2,
                           }}
-                          
+
                           className="mx-auto group relative flex items-center gap-4 px-6 py-4 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold text-lg shadow-lg hover:shadow-2xl transition-all duration-300 focus:outline-none"
                         >
                           {/* Stripe logo container */}
@@ -409,18 +407,18 @@ const SignUpWizard = () => {
                             transition={{ duration: 0.5 }}
                             className="bg-white rounded-2xl px-4 py-2 flex items-center justify-center text-purple-600 font-bold text-lg"
                           >
-                            
+
                           </motion.div>
-                    Finish
-                    {loading ? (
-                      // Loading spinner
-                      <div className="w-5 h-5 relative">
-                        <div className="w-5 h-5 border-2 border-white/30 rounded-full"></div>
-                        <div className="w-5 h-5 border-2 border-t-white border-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-                      </div>
-                    ) : (
-                      <ChevronRight className="w-5 h-5" />
-                    )}
+                          Finish
+                          {loading ? (
+                            // Loading spinner
+                            <div className="w-5 h-5 relative">
+                              <div className="w-5 h-5 border-2 border-white/30 rounded-full"></div>
+                              <div className="w-5 h-5 border-2 border-t-white border-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                            </div>
+                          ) : (
+                            <ChevronRight className="w-5 h-5" />
+                          )}
                         </motion.button>
                       </motion.div>
                     )}
@@ -428,45 +426,49 @@ const SignUpWizard = () => {
                 </div>
 
                 <div className="flex items-center justify-between mt-5">
-                  <button
-                    onClick={() =>
-                      setActiveStep(activeStep > 1 ? activeStep - 1 : 1)
-                    }
-                    className="hidden md:flex items-center gap-2"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                    back
-                  </button>
-                 {
-                  activeStep == 1 && (
-                    <button
-                    type="button"
-                    disabled={loading || (activeStep == 1 && !is_all_selected)}
-                    onClick={() => HandleNextButton()}
-                    className={`
+                  {activeStep > 1 ? (
+                   <button
+                   onClick={() =>
+                     setActiveStep(activeStep > 1 ? activeStep - 1 : 1)
+                   }
+                   className="hidden md:flex items-center gap-2"
+                 >
+                   <ChevronLeft className="w-5 h-5" />
+                   back
+                 </button>
+                  ): (
+                    <div></div>
+                  )}
+                  
+                  {
+                    activeStep == 1 && (
+                      <button
+                        type="button"
+                        disabled={loading || (activeStep == 1 && !is_all_selected)}
+                        onClick={() => HandleNextButton()}
+                        className={`
     hidden md:flex items-center gap-2 px-6 py-3 
     text-white rounded-full font-medium
     transition-all duration-300 ease-in-out
-    ${
-      loading || (activeStep == 1 && !is_all_selected)
-        ? "bg-[#CF3FAD]/60 cursor-not-allowed"
-        : "bg-[#CF3FAD] hover:bg-[#CF3FAD]/80 cursor-pointer"
-    }
+    ${loading || (activeStep == 1 && !is_all_selected)
+                            ? "bg-[#CF3FAD]/60 cursor-not-allowed"
+                            : "bg-[#CF3FAD] hover:bg-[#CF3FAD]/80 cursor-pointer"
+                          }
   `}
-                  >
-                    Continue
-                    {loading ? (
-                      // Loading spinner
-                      <div className="w-5 h-5 relative">
-                        <div className="w-5 h-5 border-2 border-white/30 rounded-full"></div>
-                        <div className="w-5 h-5 border-2 border-t-white border-transparent rounded-full animate-spin absolute top-0 left-0"></div>
-                      </div>
-                    ) : (
-                      <ChevronRight className="w-5 h-5" />
-                    )}
-                  </button>
-                  )
-                 }
+                      >
+                        Continue
+                        {loading ? (
+                          // Loading spinner
+                          <div className="w-5 h-5 relative">
+                            <div className="w-5 h-5 border-2 border-white/30 rounded-full"></div>
+                            <div className="w-5 h-5 border-2 border-t-white border-transparent rounded-full animate-spin absolute top-0 left-0"></div>
+                          </div>
+                        ) : (
+                          <ChevronRight className="w-5 h-5" />
+                        )}
+                      </button>
+                    )
+                  }
                 </div>
 
                 {/* Mobile Continue Button */}

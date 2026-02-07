@@ -142,7 +142,12 @@ exports.Prisma.Flow_stateScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   authentication_method: 'authentication_method',
-  auth_code_issued_at: 'auth_code_issued_at'
+  auth_code_issued_at: 'auth_code_issued_at',
+  invite_token: 'invite_token',
+  referrer: 'referrer',
+  oauth_client_state_id: 'oauth_client_state_id',
+  linking_target_id: 'linking_target_id',
+  email_optional: 'email_optional'
 };
 
 exports.Prisma.IdentitiesScalarFieldEnum = {
@@ -238,7 +243,8 @@ exports.Prisma.Oauth_clientsScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   deleted_at: 'deleted_at',
-  client_type: 'client_type'
+  client_type: 'client_type',
+  token_endpoint_auth_method: 'token_endpoint_auth_method'
 };
 
 exports.Prisma.Oauth_consentsScalarFieldEnum = {
@@ -437,7 +443,8 @@ exports.Prisma.SessionsScalarFieldEnum = {
   start_time: 'start_time',
   duration: 'duration',
   amount: 'amount',
-  date: 'date'
+  date: 'date',
+  subject_id: 'subject_id'
 };
 
 exports.Prisma.SubjectsScalarFieldEnum = {
