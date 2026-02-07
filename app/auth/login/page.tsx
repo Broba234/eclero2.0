@@ -142,7 +142,7 @@ function LoginContent() {
     Don't have an account? Sign up as:
   </p>
   
-  <div className="flex flex-row gap-3 justify-center items-center">
+  <div className="flex gap-3 justify-center items-center flex-row">
     <Link
       href={`/auth/register?role=student`}
       className="text-[#1559C6] hover:text-[#1559C6] transition text-sm underline"
