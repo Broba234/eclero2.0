@@ -498,9 +498,9 @@ model ProfilesOnSubjects {
   duration_3 Float?    @default(1.5)
   duration_2 Float?    @default(1)
   duration_1 Float?    @default(0.5)
-  Profiles   Profiles  @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  Subjects   Subjects  @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-
+  Profiles           Profiles            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Subjects           Subjects            @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  TutorAvailability TutorAvailability[]
   @@id([profile_id, subject_id])
   @@schema("public")
 }
@@ -559,7 +559,7 @@ model TutorAvailability {
   duration_1  Int?      @default(0) @db.SmallInt
   duration_2  Int?      @default(0) @db.SmallInt
   tutor       Profiles  @relation(fields: [tutor_id], references: [id], onDelete: Cascade)
-
+  profileSubject ProfilesOnSubjects? @relation(fields: [tutor_id, subject_id], references: [profile_id, subject_id], onDelete: Cascade)
   @@index([day_of_week, start_time, end_time], map: "TutorAvailability_day_time_idx")
   @@index([tutor_id])
   @@schema("public")

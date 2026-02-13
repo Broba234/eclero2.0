@@ -488,18 +488,19 @@ model Profiles {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ProfilesOnSubjects {
-  profile_id String    @db.Uuid
-  subject_id String    @db.Uuid
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  price_1    Float?
-  price_2    Float?
-  price_3    Float?    @default(1)
-  duration_3 Float?    @default(1.5)
-  duration_2 Float?    @default(1)
-  duration_1 Float?    @default(0.5)
-  Profiles   Profiles  @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  Subjects   Subjects  @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profile_id        String              @db.Uuid
+  subject_id        String              @db.Uuid
+  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  price_1           Float?
+  price_2           Float?
+  price_3           Float?              @default(1)
+  duration_3        Float?              @default(1.5)
+  duration_2        Float?              @default(1)
+  duration_1        Float?              @default(0.5)
+  Profiles          Profiles            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Subjects          Subjects            @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  TutorAvailability TutorAvailability[]
 
   @@id([profile_id, subject_id])
   @@schema("public")
@@ -542,23 +543,24 @@ model Subjects {
 }
 
 model TutorAvailability {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tutor_id    String    @db.Uuid
-  day_of_week Int?
-  start_time  DateTime? @db.Time(6)
-  end_time    DateTime? @db.Time(6)
-  timezone    String?   @default("UTC")
-  is_active   Boolean   @default(true)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @default(now())
-  subject_id  String?   @db.Uuid
-  start_date  DateTime? @db.Timestamptz(6)
-  end_date    DateTime? @db.Timestamptz(6)
-  subject     String?
-  duration_3  Int?      @default(0) @db.SmallInt
-  duration_1  Int?      @default(0) @db.SmallInt
-  duration_2  Int?      @default(0) @db.SmallInt
-  tutor       Profiles  @relation(fields: [tutor_id], references: [id], onDelete: Cascade)
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tutor_id       String              @db.Uuid
+  day_of_week    Int?
+  start_time     DateTime?           @db.Time(6)
+  end_time       DateTime?           @db.Time(6)
+  timezone       String?             @default("UTC")
+  is_active      Boolean             @default(true)
+  created_at     DateTime            @default(now())
+  updated_at     DateTime            @default(now())
+  subject_id     String?             @db.Uuid
+  start_date     DateTime?           @db.Timestamptz(6)
+  end_date       DateTime?           @db.Timestamptz(6)
+  subject        String?
+  duration_3     Int?                @default(0) @db.SmallInt
+  duration_1     Int?                @default(0) @db.SmallInt
+  duration_2     Int?                @default(0) @db.SmallInt
+  tutor          Profiles            @relation(fields: [tutor_id], references: [id], onDelete: Cascade)
+  profileSubject ProfilesOnSubjects? @relation(fields: [tutor_id, subject_id], references: [profile_id, subject_id], onDelete: Cascade)
 
   @@index([day_of_week, start_time, end_time], map: "TutorAvailability_day_time_idx")
   @@index([tutor_id])
