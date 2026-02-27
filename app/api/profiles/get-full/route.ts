@@ -28,6 +28,7 @@ export async function GET(request: Request) {
         updated_at: true,
         profile_setup: true,
         is_tutor: true,
+        stripe_account_id: true,
         subjects: {
           select: {
             Subjects: {

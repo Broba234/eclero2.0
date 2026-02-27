@@ -1,3 +1,4 @@
+
 {
   "name": "eclero2.0",
   "version": "0.1.0",
@@ -5,7 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "NODE_ENV=production node server.ts",
     "lint": "next lint",
     "test": "jest",
     "test:watch": "jest --watch",
@@ -17,7 +18,8 @@
     "@livekit/components-react": "^2.9.13",
     "@livekit/components-styles": "^1.1.6",
     "@prisma/client": "^5.22.0",
-    "@stripe/stripe-js": "^2.4.0",
+    "@stripe/react-stripe-js": "^5.6.0",
+    "@stripe/stripe-js": "^8.0.0",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.89.0",
     "@tiptap/pm": "^3.15.3",
@@ -33,7 +35,7 @@
     "next": "^16.1.1",
     "pg": "^8.16.3",
     "prisma": "^5.22.0",
-    "quill": "^2.0.3",
+    "quill": "2.0.2",
     "react": "^18.2.0",
     "react-big-calendar": "^1.19.4",
     "react-date-range": "^2.0.1",
@@ -69,5 +71,12 @@
     "ts-jest": "^29.4.6",
     "tsx": "^4.21.0",
     "typescript": "^5.3.3"
+  },
+  "overrides": {
+    "glob": "^13.0.0",
+    "minimatch": "^10.2.1",
+    "dompurify": "^3.2.4",
+    "nanoid": "^5.0.9",
+    "mermaid": "^10.9.4"
   }
 }

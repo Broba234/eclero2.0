@@ -1,6 +1,18 @@
-import { bookSession } from "@/lib/bookingUtils";
+"use client";
+
 import { supabase } from "@/lib/supabaseClient";
 import React, { useEffect, useMemo, useState } from "react";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+
+const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+  ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
+  : null;
 
 interface TutorProfile {
   id: string;
@@ -41,6 +53,117 @@ interface TutorProfileBubbleProps {
   onBookSession?: (tutor: TutorProfile) => void;
 }
 
+function PaymentForm({
+  sessionId,
+  amount,
+  tutorName,
+  onSuccess,
+  onBack,
+}: {
+  sessionId: string;
+  amount: number;
+  tutorName: string;
+  onSuccess: () => void;
+  onBack: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setLoading(true);
+    setError(null);
+
+    const returnUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${window.location.pathname}`
+        : "";
+
+    const { error: submitError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: returnUrl,
+        receipt_email: undefined,
+        payment_method_data: {
+          billing_details: {
+            address: { country: "US" },
+          },
+        },
+      },
+    });
+
+    if (submitError) {
+      setError(submitError.message || "Payment failed");
+      setLoading(false);
+      return;
+    }
+
+    // Payment may redirect for 3DS; if we get here, it succeeded without redirect
+    const res = await fetch("/api/sessions/confirm-payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sessionId }),
+    });
+    if (res.ok) {
+      onSuccess();
+    } else {
+      const data = await res.json();
+      setError(data.error || "Failed to confirm session");
+    }
+    setLoading(false);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100 mb-4">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-700 font-semibold">Amount to pay</span>
+          <span className="font-bold text-indigo-700">${amount.toFixed(2)}</span>
+        </div>
+        <p className="text-xs text-gray-500 mt-1">
+          90% goes to {tutorName}, 10% platform fee
+        </p>
+      </div>
+
+      <div className="min-h-[200px]">
+        <PaymentElement
+          options={{
+            layout: "tabs",
+          }}
+        />
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 rounded-lg text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <button
+          type="button"
+          onClick={onBack}
+          disabled={loading}
+          className="flex-1 px-4 py-3 rounded-xl text-sm font-semibold text-gray-700 bg-gray-50 border-2 border-gray-200 hover:bg-gray-100 disabled:opacity-50 transition-all"
+        >
+          Back
+        </button>
+        <button
+          type="submit"
+          disabled={!stripe || loading}
+          className="flex-1 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+        >
+          {loading ? "Processing…" : "Pay now"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
   tutor,
   userId,
@@ -50,6 +173,10 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
 }) => {
   if (!isOpen) return null;
 
+  const [step, setStep] = useState<1 | 2>(1);
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [paymentLoading, setPaymentLoading] = useState(false);
   const [selectedDuration, setSelectedDuration] = useState<"0.5" | "1" | "1.5"| any>("0.5");
   const [selectedTime, setSelectedTime] = useState<number | null>(null);
   const [bookingTopic, setBookingTopic] = useState("");
@@ -179,8 +306,7 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
     const availableSlots = Array.isArray(tutor.availableSlots)
       ? tutor.availableSlots
       : [];
-console.log(availableSlots);
-const toMinutes = (value?: string | Date | null) => {
+    const toMinutes = (value?: string | Date | null) => {
   if (!value) return null;
   
   if (typeof value === 'string') {
@@ -197,7 +323,6 @@ const toMinutes = (value?: string | Date | null) => {
 };
 
     for (const slot of availableSlots) {
-      console.log("slotsssssssss", slot);  
       const start = toMinutes(slot.start_time);
       const end = toMinutes(slot.end_time);
       if (start === null || end === null || end <= start) continue;
@@ -208,60 +333,88 @@ const toMinutes = (value?: string | Date | null) => {
 
     return Array.from(slots).sort((a, b) => a - b);
   }, [selectedDuration, tutor.availableSlots]);
-console.log("timeSlots", timeSlots);
-  const handleBookSession = async () => {
+
+  const minutesToTimeString = (minutes: number) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return `${hours.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:00`;
+  };
+
+  const handleConfirm = async () => {
     if (!tutor || !userId || !selectedTime) {
       alert("Please select a time slot");
       return;
     }
-    
-    try {
-      // Convert minutes to ISO string
-      const minutesToTimeString = (minutes: number) => {
-        const hours = Math.floor(minutes / 60);
-        const mins = minutes % 60;
-        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:00`;
-      };
-      
-      const bookingTime = minutesToTimeString(selectedTime);
-      
-      const amount =
-        getSessionPrice(String(selectedDuration)) ?? selectedDuration;
 
+    const amount =
+      getSessionPrice(String(selectedDuration)) ?? Number(selectedDuration);
+    if (typeof amount !== "number" || amount <= 0) {
+      alert("Invalid session price");
+      return;
+    }
+
+    setPaymentLoading(true);
+    try {
+      const bookingTime = minutesToTimeString(selectedTime);
       const subjectIdForBooking =
         selectedSubjectId && selectedSubjectId.length > 0
           ? selectedSubjectId
           : selectedTutorSubject && typeof selectedTutorSubject.id === "string"
-          ? selectedTutorSubject.id
-          : undefined;
+            ? selectedTutorSubject.id
+            : undefined;
 
-      const result = await bookSession({
-        tutorId: tutor.id,
-        studentId: userId,
-        start_time: bookingTime,  // Add this field
-        duration: selectedDuration * 1,      // Add this field
-        topic: bookingTopic.trim() || undefined,
-        notes: bookingNotes.trim() || undefined,
-        date: new Date().toISOString(),
-        amount,
-        subjectId: subjectIdForBooking,
+      const res = await fetch("/api/stripe/create-session-payment-intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tutorId: tutor.id,
+          studentId: userId,
+          amount,
+          start_time: bookingTime,
+          duration: Number(selectedDuration),
+          topic: bookingTopic.trim() || undefined,
+          notes: bookingNotes.trim() || undefined,
+          date: new Date().toISOString(),
+          subjectId: subjectIdForBooking,
+        }),
       });
-  
-      if (result.success) {
-        alert(`Session successfully booked with ${tutor.name}! They will receive your request.`);
-        // Reset form
-        setSelectedTime(null);
-        setBookingTopic("");
-        setBookingNotes("");
-      } else {
-        alert(`Failed to book session: ${result.error}`);
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.error || "Failed to create payment");
+        setPaymentLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error('Booking error:', error);
-      alert('An error occurred while booking the session.');
+
+      setClientSecret(data.clientSecret);
+      setSessionId(data.sessionId);
+      setStep(2);
+    } catch (err) {
+      console.error("Payment intent error:", err);
+      alert("An error occurred. Please try again.");
+    } finally {
+      setPaymentLoading(false);
     }
   };
-console.log("tutor", tutor);
+
+  const handlePaymentSuccess = () => {
+    alert(`Session successfully booked with ${tutor.name}! Payment complete.`);
+    setStep(1);
+    setClientSecret(null);
+    setSessionId(null);
+    setSelectedTime(null);
+    setBookingTopic("");
+    setBookingNotes("");
+    onBookSession?.(tutor);
+    onClose();
+  };
+
+  const handleBackToBooking = () => {
+    setStep(1);
+    setClientSecret(null);
+    setSessionId(null);
+  };
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
     <div className="relative w-[90vw] max-w-4xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-2xl border border-gray-100 p-8 flex flex-col md:flex-row gap-8">
@@ -332,13 +485,38 @@ console.log("tutor", tutor);
       <div className="flex-1">
         <div className="mb-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-2">
-            Schedule a Session
+            {step === 1 ? "Schedule a Session" : "Complete Payment"}
           </h3>
           <p className="text-gray-600">
-            Book a personalized learning session with {tutor.name}
+            {step === 1
+              ? `Book a personalized learning session with ${tutor.name}`
+              : `Pay securely with Stripe. 90% goes to ${tutor.name}, 10% platform fee.`}
           </p>
         </div>
-        
+
+        {step === 2 && clientSecret && stripePromise && sessionId ? (
+          <Elements
+            stripe={stripePromise}
+            options={{
+              clientSecret,
+              appearance: {
+                theme: "stripe",
+                variables: { borderRadius: "12px" },
+              },
+            }}
+          >
+            <PaymentForm
+              sessionId={sessionId}
+              amount={
+                getSessionPrice(String(selectedDuration)) ??
+                Number(selectedDuration)
+              }
+              tutorName={tutor.name || "Tutor"}
+              onSuccess={handlePaymentSuccess}
+              onBack={handleBackToBooking}
+            />
+          </Elements>
+        ) : (
         <div className="space-y-8">
           {/* Duration Selection */}
           <div>
@@ -487,11 +665,11 @@ console.log("tutor", tutor);
                   </button>
                   <button
                     type="button"
-                    onClick={handleBookSession}
-                    disabled={selectedTime === null}
+                    onClick={handleConfirm}
+                    disabled={selectedTime === null || paymentLoading}
                     className="flex-1 px-3 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                   >
-                    Confirm
+                    {paymentLoading ? "Preparing…" : "Confirm"}
                   </button>
                 </div>
                 
@@ -523,6 +701,7 @@ console.log("tutor", tutor);
             </div>
           </div>
         </div>
+        )}
       </div>
     </div>
   </div>

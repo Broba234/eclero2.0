@@ -42,11 +42,8 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Use a transaction for data consistency
-    const result = await prisma.$transaction(async (tx:any) => {
       // Get existing subject connections
-      const existingConnections = await tx.profilesOnSubjects.findMany({
+      const existingConnections = await prisma.profilesOnSubjects.findMany({
         where: { profile_id: profile.id }
       });
 
@@ -59,7 +56,7 @@ export async function PUT(request: NextRequest) {
       );
 
       if (subjectsToDelete.length > 0) {
-        await tx.profilesOnSubjects.deleteMany({
+        await prisma.profilesOnSubjects.deleteMany({
           where: {
             profile_id: profile.id,
             subject_id: {
@@ -76,7 +73,7 @@ export async function PUT(request: NextRequest) {
         const price_2 = Number(subject.price_2) || 0;
         const price_3 = Number(subject.price_3) || 0;
 
-        return tx.profilesOnSubjects.upsert({
+        return prisma.profilesOnSubjects.upsert({
           where: {
             profile_id_subject_id: {
               profile_id: profile.id,
@@ -101,28 +98,9 @@ export async function PUT(request: NextRequest) {
       // Execute all upsert operations
       await Promise.all(upsertOperations);
 
-      // Return updated profile with subjects
-      return await prisma.profiles.findUnique({
-        where: { id: profile.id },
-        include: {
-          subjects: {
-            include: {
-              Subjects: true
-            }
-          }
-        }
-      });
-    });
-
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error: any) {
-    console.error('[PROFILE_UPDATE] Error:', error);
-    return NextResponse.json(
-      {
-        error: 'Internal Server Error',
-        details: error?.message || 'Unknown error'
-      },
-      { status: 500 }
-    );
+    console.error('[SUBJECTS_UPDATE] Error:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

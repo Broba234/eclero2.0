@@ -25772,6 +25772,7 @@ export namespace Prisma {
     updated_at: Date | null
     profile_setup: boolean | null
     is_tutor: boolean | null
+    stripe_account_id: string | null
   }
 
   export type ProfilesMaxAggregateOutputType = {
@@ -25790,6 +25791,7 @@ export namespace Prisma {
     updated_at: Date | null
     profile_setup: boolean | null
     is_tutor: boolean | null
+    stripe_account_id: string | null
   }
 
   export type ProfilesCountAggregateOutputType = {
@@ -25810,6 +25812,7 @@ export namespace Prisma {
     updated_at: number
     profile_setup: number
     is_tutor: number
+    stripe_account_id: number
     _all: number
   }
 
@@ -25840,6 +25843,7 @@ export namespace Prisma {
     updated_at?: true
     profile_setup?: true
     is_tutor?: true
+    stripe_account_id?: true
   }
 
   export type ProfilesMaxAggregateInputType = {
@@ -25858,6 +25862,7 @@ export namespace Prisma {
     updated_at?: true
     profile_setup?: true
     is_tutor?: true
+    stripe_account_id?: true
   }
 
   export type ProfilesCountAggregateInputType = {
@@ -25878,6 +25883,7 @@ export namespace Prisma {
     updated_at?: true
     profile_setup?: true
     is_tutor?: true
+    stripe_account_id?: true
     _all?: true
   }
 
@@ -25985,6 +25991,7 @@ export namespace Prisma {
     updated_at: Date | null
     profile_setup: boolean | null
     is_tutor: boolean | null
+    stripe_account_id: string | null
     _count: ProfilesCountAggregateOutputType | null
     _avg: ProfilesAvgAggregateOutputType | null
     _sum: ProfilesSumAggregateOutputType | null
@@ -26024,6 +26031,7 @@ export namespace Prisma {
     updated_at?: boolean
     profile_setup?: boolean
     is_tutor?: boolean
+    stripe_account_id?: boolean
     Conversations_Conversations_student_idToProfiles?: boolean | Profiles$Conversations_Conversations_student_idToProfilesArgs<ExtArgs>
     Conversations_Conversations_tutor_idToProfiles?: boolean | Profiles$Conversations_Conversations_tutor_idToProfilesArgs<ExtArgs>
     Messages?: boolean | Profiles$MessagesArgs<ExtArgs>
@@ -26053,6 +26061,7 @@ export namespace Prisma {
     updated_at?: boolean
     profile_setup?: boolean
     is_tutor?: boolean
+    stripe_account_id?: boolean
     users?: boolean | usersDefaultArgs<ExtArgs>
   }, ExtArgs["result"]["profiles"]>
 
@@ -26074,6 +26083,7 @@ export namespace Prisma {
     updated_at?: boolean
     profile_setup?: boolean
     is_tutor?: boolean
+    stripe_account_id?: boolean
   }
 
   export type ProfilesInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -26121,6 +26131,7 @@ export namespace Prisma {
       updated_at: Date | null
       profile_setup: boolean | null
       is_tutor: boolean | null
+      stripe_account_id: string | null
     }, ExtArgs["result"]["profiles"]>
     composites: {}
   }
@@ -26539,6 +26550,7 @@ export namespace Prisma {
     readonly updated_at: FieldRef<"Profiles", 'DateTime'>
     readonly profile_setup: FieldRef<"Profiles", 'Boolean'>
     readonly is_tutor: FieldRef<"Profiles", 'Boolean'>
+    readonly stripe_account_id: FieldRef<"Profiles", 'String'>
   }
     
 
@@ -31688,7 +31700,8 @@ export namespace Prisma {
     created_at: 'created_at',
     updated_at: 'updated_at',
     profile_setup: 'profile_setup',
-    is_tutor: 'is_tutor'
+    is_tutor: 'is_tutor',
+    stripe_account_id: 'stripe_account_id'
   };
 
   export type ProfilesScalarFieldEnum = (typeof ProfilesScalarFieldEnum)[keyof typeof ProfilesScalarFieldEnum]
@@ -33817,6 +33830,7 @@ export namespace Prisma {
     updated_at?: DateTimeNullableFilter<"Profiles"> | Date | string | null
     profile_setup?: BoolNullableFilter<"Profiles"> | boolean | null
     is_tutor?: BoolNullableFilter<"Profiles"> | boolean | null
+    stripe_account_id?: StringNullableFilter<"Profiles"> | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsListRelationFilter
     Conversations_Conversations_tutor_idToProfiles?: ConversationsListRelationFilter
     Messages?: MessagesListRelationFilter
@@ -33845,6 +33859,7 @@ export namespace Prisma {
     updated_at?: SortOrderInput | SortOrder
     profile_setup?: SortOrderInput | SortOrder
     is_tutor?: SortOrderInput | SortOrder
+    stripe_account_id?: SortOrderInput | SortOrder
     Conversations_Conversations_student_idToProfiles?: ConversationsOrderByRelationAggregateInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsOrderByRelationAggregateInput
     Messages?: MessagesOrderByRelationAggregateInput
@@ -33876,6 +33891,7 @@ export namespace Prisma {
     updated_at?: DateTimeNullableFilter<"Profiles"> | Date | string | null
     profile_setup?: BoolNullableFilter<"Profiles"> | boolean | null
     is_tutor?: BoolNullableFilter<"Profiles"> | boolean | null
+    stripe_account_id?: StringNullableFilter<"Profiles"> | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsListRelationFilter
     Conversations_Conversations_tutor_idToProfiles?: ConversationsListRelationFilter
     Messages?: MessagesListRelationFilter
@@ -33904,6 +33920,7 @@ export namespace Prisma {
     updated_at?: SortOrderInput | SortOrder
     profile_setup?: SortOrderInput | SortOrder
     is_tutor?: SortOrderInput | SortOrder
+    stripe_account_id?: SortOrderInput | SortOrder
     _count?: ProfilesCountOrderByAggregateInput
     _avg?: ProfilesAvgOrderByAggregateInput
     _max?: ProfilesMaxOrderByAggregateInput
@@ -33932,6 +33949,7 @@ export namespace Prisma {
     updated_at?: DateTimeNullableWithAggregatesFilter<"Profiles"> | Date | string | null
     profile_setup?: BoolNullableWithAggregatesFilter<"Profiles"> | boolean | null
     is_tutor?: BoolNullableWithAggregatesFilter<"Profiles"> | boolean | null
+    stripe_account_id?: StringNullableWithAggregatesFilter<"Profiles"> | string | null
   }
 
   export type ProfilesOnSubjectsWhereInput = {
@@ -36304,6 +36322,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
@@ -36332,6 +36351,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
@@ -36358,6 +36378,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
@@ -36386,6 +36407,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput
@@ -36413,6 +36435,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
   }
 
   export type ProfilesUpdateManyMutationInput = {
@@ -36432,6 +36455,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ProfilesUncheckedUpdateManyInput = {
@@ -36452,6 +36476,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
   }
 
   export type ProfilesOnSubjectsCreateInput = {
@@ -38520,6 +38545,7 @@ export namespace Prisma {
     updated_at?: SortOrder
     profile_setup?: SortOrder
     is_tutor?: SortOrder
+    stripe_account_id?: SortOrder
   }
 
   export type ProfilesAvgOrderByAggregateInput = {
@@ -38543,6 +38569,7 @@ export namespace Prisma {
     updated_at?: SortOrder
     profile_setup?: SortOrder
     is_tutor?: SortOrder
+    stripe_account_id?: SortOrder
   }
 
   export type ProfilesMinOrderByAggregateInput = {
@@ -38561,6 +38588,7 @@ export namespace Prisma {
     updated_at?: SortOrder
     profile_setup?: SortOrder
     is_tutor?: SortOrder
+    stripe_account_id?: SortOrder
   }
 
   export type ProfilesSumOrderByAggregateInput = {
@@ -43747,6 +43775,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
@@ -43773,6 +43802,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
@@ -43958,6 +43988,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
@@ -43984,6 +44015,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput
@@ -44010,6 +44042,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
     users: usersCreateNestedOneWithoutProfilesInput
@@ -44037,6 +44070,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
     subjects?: ProfilesOnSubjectsUncheckedCreateNestedManyWithoutProfilesInput
@@ -44067,6 +44101,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
     users: usersCreateNestedOneWithoutProfilesInput
@@ -44094,6 +44129,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
     subjects?: ProfilesOnSubjectsUncheckedCreateNestedManyWithoutProfilesInput
@@ -44163,6 +44199,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
     users?: usersUpdateOneRequiredWithoutProfilesNestedInput
@@ -44190,6 +44227,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput
     subjects?: ProfilesOnSubjectsUncheckedUpdateManyWithoutProfilesNestedInput
@@ -44226,6 +44264,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
     users?: usersUpdateOneRequiredWithoutProfilesNestedInput
@@ -44253,6 +44292,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput
     subjects?: ProfilesOnSubjectsUncheckedUpdateManyWithoutProfilesNestedInput
@@ -44332,6 +44372,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     users: usersCreateNestedOneWithoutProfilesInput
@@ -44359,6 +44400,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     subjects?: ProfilesOnSubjectsUncheckedCreateNestedManyWithoutProfilesInput
@@ -44431,6 +44473,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     users?: usersUpdateOneRequiredWithoutProfilesNestedInput
@@ -44458,6 +44501,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     subjects?: ProfilesOnSubjectsUncheckedUpdateManyWithoutProfilesNestedInput
@@ -45112,6 +45156,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
@@ -45139,6 +45184,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
@@ -45250,6 +45296,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
@@ -45277,6 +45324,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput
@@ -45349,6 +45397,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
@@ -45376,6 +45425,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
@@ -45406,6 +45456,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
@@ -45433,6 +45484,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
@@ -45474,6 +45526,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
@@ -45501,6 +45554,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput
@@ -45537,6 +45591,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
@@ -45564,6 +45619,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput
@@ -45641,6 +45697,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesCreateNestedManyWithoutProfilesInput
@@ -45668,6 +45725,7 @@ export namespace Prisma {
     updated_at?: Date | string | null
     profile_setup?: boolean | null
     is_tutor?: boolean | null
+    stripe_account_id?: string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_student_idToProfilesInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedCreateNestedManyWithoutProfiles_Conversations_tutor_idToProfilesInput
     Messages?: MessagesUncheckedCreateNestedManyWithoutProfilesInput
@@ -45740,6 +45798,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUpdateManyWithoutProfilesNestedInput
@@ -45767,6 +45826,7 @@ export namespace Prisma {
     updated_at?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     profile_setup?: NullableBoolFieldUpdateOperationsInput | boolean | null
     is_tutor?: NullableBoolFieldUpdateOperationsInput | boolean | null
+    stripe_account_id?: NullableStringFieldUpdateOperationsInput | string | null
     Conversations_Conversations_student_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_student_idToProfilesNestedInput
     Conversations_Conversations_tutor_idToProfiles?: ConversationsUncheckedUpdateManyWithoutProfiles_Conversations_tutor_idToProfilesNestedInput
     Messages?: MessagesUncheckedUpdateManyWithoutProfilesNestedInput

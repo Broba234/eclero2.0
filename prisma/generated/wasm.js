@@ -414,7 +414,8 @@ exports.Prisma.ProfilesScalarFieldEnum = {
   created_at: 'created_at',
   updated_at: 'updated_at',
   profile_setup: 'profile_setup',
-  is_tutor: 'is_tutor'
+  is_tutor: 'is_tutor',
+  stripe_account_id: 'stripe_account_id'
 };
 
 exports.Prisma.ProfilesOnSubjectsScalarFieldEnum = {

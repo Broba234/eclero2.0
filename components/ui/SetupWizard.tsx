@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { WizardSubjectSelector } from "../WizardSubjectSelector";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ import {
   Book,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCountryFromTimezone } from "@/lib/timezone-to-country";
 import SelectSubject from "./components/SelectSubject";
 import WizardTimeSlot from "./components/WizardTimeSlot";
 const ArrowLeftIcon = () => (
@@ -94,7 +95,26 @@ const SetupWizard = () => {
   const [selectedSubjectsWithPrice, setSelectedSubjectsWithPrice] = useState<
     Subjects[]
   >([]);
+  const [stripeConnected, setStripeConnected] = useState(false);
+  const [stripeLoading, setStripeLoading] = useState(false);
+  const [activeStep, setActiveStep] = useState(1);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Land on step 4 when returning from Stripe onboarding or manual back
+  useEffect(() => {
+    const step = searchParams.get("setup");
+    const stored = typeof window !== "undefined" && sessionStorage.getItem("setupReturnStep");
+    if (step === "4" || stored === "4") {
+      setActiveStep(4);
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("setupReturnStep");
+      }
+      if (step === "4") {
+        router.replace("/home/tutor", { scroll: false });
+      }
+    }
+  }, [searchParams, router]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -138,6 +158,8 @@ const SetupWizard = () => {
               );
           }
           setSelectedSubjects(normalizedSubjects);
+          console.log("profileData", profileData);
+          setStripeConnected(Boolean(profileData.stripe_account_id));
         }
       } catch (error) {}
     };
@@ -168,6 +190,19 @@ const SetupWizard = () => {
         setCategories([]);
       });
   }, [router]);
+
+  useEffect(() => {
+    if (activeStep === 4 && profile?.email) {
+      fetch(
+        `/api/stripe/connect/status?email=${encodeURIComponent(profile.email)}`
+      )
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.connected) setStripeConnected(true);
+        })
+        .catch(() => {});
+    }
+  }, [activeStep, profile?.email]);
   const handleInputChange = (e: any) => {
     const { name, value } = e.target;
     let processedValue = value;
@@ -179,7 +214,6 @@ const SetupWizard = () => {
       [name]: processedValue,
     }));
   };
-  const [activeStep, setActiveStep] = useState(1);
 
   const steps = [
     {
@@ -314,6 +348,7 @@ const SetupWizard = () => {
       }
     }
     if (activeStep === 4) {
+      if (formData.is_tutor && !stripeConnected) return;
       HandleChangeSetUpStatus();
     }
   };
@@ -649,7 +684,7 @@ const SetupWizard = () => {
 
                     {steps[activeStep - 1].number == 4 && (
                       <motion.div
-                        key="step-3"
+                        key="step-4"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
@@ -658,63 +693,140 @@ const SetupWizard = () => {
                           ease: [0.4, 0, 0.2, 1],
                           delay: 0.1,
                         }}
-                        className="w-full h-full flex items-center justify-center"
+                        className="w-full h-full flex flex-col items-center justify-center gap-6"
                       >
-                        <motion.button
-                          whileHover={{
-                            scale: 1.05,
-                            boxShadow: "0 20px 40px rgba(139, 92, 246, 0.3)",
-                          }}
-                          whileTap={{ scale: 0.98 }}
-                          initial={{ scale: 0.9, opacity: 0 }}
-                          animate={{ scale: 1, opacity: 1 }}
-                          transition={{
-                            duration: 0.5,
-                            ease: "backOut",
-                            delay: 0.2,
-                          }}
-                          onClick={() => {
-                          }}
-                          className="mx-auto group relative flex items-center gap-4 px-6 py-4 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold text-lg shadow-lg hover:shadow-2xl transition-all duration-300 focus:outline-none"
-                        >
-                          {/* Stripe logo container */}
+                        {stripeConnected ? (
                           <motion.div
-                            whileHover={{ rotate: [-5, 5, -5] }}
-                            transition={{ duration: 0.5 }}
-                            className="bg-white rounded-2xl px-4 py-2 flex items-center justify-center text-purple-600 font-bold text-lg"
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-green-50 border-2 border-green-200"
                           >
-                            stripe
+                            <CheckCircle className="w-16 h-16 text-green-600" />
+                            <p className="text-lg font-semibold text-green-800">
+                              Stripe account connected
+                            </p>
+                            <p className="text-sm text-green-700 text-center max-w-md">
+                              You can now receive payments for your tutoring sessions.
+                            </p>
+                            <motion.button
+                              type="button"
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              disabled={stripeLoading}
+                              onClick={async () => {
+                                setStripeLoading(true);
+                                try {
+                                  const res = await fetch(
+                                    "/api/stripe/connect/login-link",
+                                    { method: "POST" }
+                                  );
+                                  const data = await res.json();
+                                  if (data.url) {
+                                    sessionStorage.setItem("setupReturnStep", "4");
+                                    window.location.href = data.url;
+                                  } else {
+                                    setStripeLoading(false);
+                                    alert(data.error || "Failed to open Stripe dashboard");
+                                  }
+                                } catch {
+                                  setStripeLoading(false);
+                                  alert("Failed to open Stripe dashboard");
+                                }
+                              }}
+                              className="mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-green-800 bg-white border-2 border-green-300 hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                              {stripeLoading ? "Opening…" : "Manage Stripe account"}
+                            </motion.button>
                           </motion.div>
-
-                          {/* Button text */}
-                          <span className="whitespace-nowrap">
-                            Connect with Stripe
-                          </span>
-
-                          {/* Arrow */}
-                          <motion.div
-                            animate={{ x: [0, 5, 0] }}
-                            transition={{
-                              duration: 1.5,
-                              repeat: Infinity,
-                              repeatType: "loop",
-                              ease: "easeInOut",
-                            }}
-                          >
-                            <ArrowRight size={22} />
-                          </motion.div>
-
-                          {/* Pulsing glow effect */}
-                          <motion.div
-                            className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 blur-xl opacity-0 -z-10"
-                            animate={{ opacity: [0, 0.3, 0] }}
-                            transition={{
-                              duration: 2,
-                              repeat: Infinity,
-                              repeatType: "loop",
-                            }}
-                          />
-                        </motion.button>
+                        ) : (
+                          <>
+                            <p className="text-gray-600 text-center max-w-md">
+                              {formData.is_tutor
+                                ? "Connect your Stripe account to receive payments from students. You'll complete a quick onboarding on Stripe's secure site."
+                                : "Connect your Stripe account if you plan to offer tutoring services."}
+                            </p>
+                            <motion.button
+                              whileHover={{
+                                scale: 1.05,
+                                boxShadow: "0 20px 40px rgba(139, 92, 246, 0.3)",
+                              }}
+                              whileTap={{ scale: 0.98 }}
+                              initial={{ scale: 0.9, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              transition={{
+                                duration: 0.5,
+                                ease: "backOut",
+                                delay: 0.2,
+                              }}
+                              disabled={stripeLoading}
+                              onClick={async () => {
+                                setStripeLoading(true);
+                                try {
+                                  // System timezone → country (e.g. Asia/Kolkata → IN)
+                                  const country = getCountryFromTimezone();
+                                  const res = await fetch(
+                                    "/api/stripe/connect/create-account-link",
+                                    {
+                                      method: "POST",
+                                      headers: {
+                                        "Content-Type": "application/json",
+                                      },
+                                      body: JSON.stringify({
+                                        email: profile?.email,
+                                        country,
+                                      }),
+                                    }
+                                  );
+                                  const data = await res.json();
+                                  if (data.url) {
+                                    sessionStorage.setItem("setupReturnStep", "4");
+                                    window.location.href = data.url;
+                                  } else {
+                                    setStripeLoading(false);
+                                    alert(data.error || "Failed to connect Stripe");
+                                  }
+                                } catch {
+                                  setStripeLoading(false);
+                                  alert("Failed to connect Stripe");
+                                }
+                              }}
+                              className="mx-auto group relative flex items-center gap-4 px-6 py-4 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold text-lg shadow-lg hover:shadow-2xl transition-all duration-300 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+                            >
+                              <motion.div
+                                whileHover={{ rotate: [-5, 5, -5] }}
+                                transition={{ duration: 0.5 }}
+                                className="bg-white rounded-2xl px-4 py-2 flex items-center justify-center text-purple-600 font-bold text-lg"
+                              >
+                                stripe
+                              </motion.div>
+                              <span className="whitespace-nowrap">
+                                {stripeLoading ? "Redirecting..." : "Connect with Stripe"}
+                              </span>
+                              {!stripeLoading && (
+                                <motion.div
+                                  animate={{ x: [0, 5, 0] }}
+                                  transition={{
+                                    duration: 1.5,
+                                    repeat: Infinity,
+                                    repeatType: "loop",
+                                    ease: "easeInOut",
+                                  }}
+                                >
+                                  <ArrowRight size={22} />
+                                </motion.div>
+                              )}
+                              <motion.div
+                                className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 blur-xl opacity-0 -z-10"
+                                animate={{ opacity: [0, 0.3, 0] }}
+                                transition={{
+                                  duration: 2,
+                                  repeat: Infinity,
+                                  repeatType: "loop",
+                                }}
+                              />
+                            </motion.button>
+                          </>
+                        )}
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -732,14 +844,20 @@ const SetupWizard = () => {
                   </button>
                   <button
                     type="button"
-                    disabled={loading || (activeStep == 3 && !is_all_selected)}
+                    disabled={
+                      loading ||
+                      (activeStep == 3 && !is_all_selected) ||
+                      (activeStep == 4 && formData.is_tutor && !stripeConnected)
+                    }
                     onClick={() => HandleNextButton()}
                     className={`
     hidden md:flex items-center gap-2 px-6 py-3 
     text-white rounded-full font-medium
     transition-all duration-300 ease-in-out
     ${
-      loading || (activeStep == 3 && !is_all_selected)
+      loading ||
+      (activeStep == 3 && !is_all_selected) ||
+      (activeStep == 4 && formData.is_tutor && !stripeConnected)
         ? "bg-[#CF3FAD]/60 cursor-not-allowed"
         : "bg-[#CF3FAD] hover:bg-[#CF3FAD]/80 cursor-pointer"
     }

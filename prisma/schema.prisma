@@ -474,6 +474,7 @@ model Profiles {
   updated_at                                       DateTime?            @default(now()) @db.Timestamptz(6)
   profile_setup                                    Boolean?             @default(false)
   is_tutor                                         Boolean?             @default(false)
+  stripe_account_id                                String?              @db.VarChar(255)
   Conversations_Conversations_student_idToProfiles Conversations[]      @relation("Conversations_student_idToProfiles")
   Conversations_Conversations_tutor_idToProfiles   Conversations[]      @relation("Conversations_tutor_idToProfiles")
   Messages                                         Messages[]

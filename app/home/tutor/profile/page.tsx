@@ -7,6 +7,7 @@ import Swal from "sweetalert2";
 import { motion } from "framer-motion";
 import SubjectSelectProfile from "@/components/ui/components/SubjectSelectProfile";
 import WizardTimeSlot from "@/components/ui/components/WizardTimeSlot";
+import { getCountryFromTimezone } from "@/lib/timezone-to-country";
 import UpdateProfileTimeSlot from "@/components/ui/components/UpdateProfileTimeSlot";
 import Image from "next/image";
 export type Subjects = {
@@ -45,6 +46,7 @@ export default function TutorProfile() {
   >([]);
   const [error, setError] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>("");
+  const [stripeLoading, setStripeLoading] = useState(false);
   const fetchProfile = async () => {
     try {
       const {
@@ -597,6 +599,65 @@ export default function TutorProfile() {
           </div>
         )}
       </section>
+
+      {/* Stripe / Payments */}
+      {profile.role === "tutor" && (
+        <section className="rounded-2xl border border-gray-300 bg-gray-50 p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900">
+                Payment account
+              </h3>
+              <p className="text-xs text-gray-600">
+                {profile.stripe_account_id
+                  ? "Manage your Stripe account to update bank details, view payouts, or complete onboarding."
+                  : "Connect your Stripe account to receive payments from students."}
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                setStripeLoading(true);
+                try {
+                  const endpoint = profile.stripe_account_id
+                    ? "/api/stripe/connect/login-link"
+                    : "/api/stripe/connect/create-account-link";
+                  const body =
+                    endpoint === "/api/stripe/connect/create-account-link"
+                      ? JSON.stringify({
+                          email: profile.email,
+                          country: getCountryFromTimezone(),
+                        })
+                      : undefined;
+                  const res = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    ...(body && { body }),
+                  });
+                  const data = await res.json();
+                  if (data.url) {
+                    sessionStorage.setItem("setupReturnStep", "4");
+                    window.location.href = data.url;
+                  } else {
+                    setStripeLoading(false);
+                    alert(data.error || "Failed to connect Stripe");
+                  }
+                } catch {
+                  setStripeLoading(false);
+                  alert("Failed to connect Stripe");
+                }
+              }}
+              disabled={stripeLoading}
+              className="inline-flex items-center px-4 py-2 rounded-full text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors"
+            >
+              {stripeLoading
+                ? "Opening…"
+                : profile.stripe_account_id
+                ? "Manage Stripe account"
+                : "Connect Stripe account"}
+            </button>
+          </div>
+        </section>
+      )}
     </div>
   </div>
 </div>

@@ -5,7 +5,6 @@ import { supabase } from "@/lib/supabaseClient";
 import { useRouter } from "next/navigation";
 import HomeSidebar from "@/components/ui/components/DashboardSidebar";
 import TutorProfileBubble from "@/components/ui/components/UserProfile/TutorProfileBubble";
-import { bookSession } from "@/lib/bookingUtils";
 
 
 import { TutorProfileModalContext } from "@/components/ui/components/common/TutorProfileModalContext";
@@ -86,6 +85,33 @@ export default function HomeLayout({
     setBookingTopic("");
     setBookingNotes("");
   };
+
+  // Handle Stripe 3DS payment return
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const paymentIntent = params.get("payment_intent");
+    const redirectStatus = params.get("redirect_status");
+    if (paymentIntent && redirectStatus === "succeeded") {
+      fetch("/api/stripe/complete-payment-return", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ payment_intent_id: paymentIntent }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            alert("Payment successful! Your session has been booked.");
+          } else {
+            alert(data.error || "Payment confirmation failed.");
+          }
+        })
+        .catch(() => alert("Failed to confirm payment."))
+        .finally(() => {
+          window.history.replaceState({}, "", window.location.pathname);
+        });
+    }
+  }, []);
 
   useEffect(() => {
     const fetchProfile = async () => {
