@@ -10,12 +10,6 @@ function convertTimeStringToDate(timeString: string) {
   return new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds));
 }
 
-// New: build Date in local time so wall-clock is preserved
-function createDateTimeFromDateAndTime(dateStr: string, timeStr: string): Date {
-  // dateStr: "YYYY-MM-DD", timeStr: "HH:mm"
-  return new Date(`${dateStr}T${timeStr}:00`);
-}
-
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
@@ -46,25 +40,25 @@ export async function PUT(request: NextRequest) {
       return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404 });
     }
 
-    // Build start/end with time preserved
-    let startDate: Date | null = null;
-    let endDate: Date | null = null;
-    let startTimeStr = '00:00';
-    let endTimeStr = '00:00';
+    // Use pre-computed UTC dates from client when available, fall back to date+time strings
+    const startDate = updatedData.start
+      ? new Date(updatedData.start)
+      : new Date(`${updatedData.date}T${updatedData.startTime}:00Z`);
+    const endDate = updatedData.end
+      ? new Date(updatedData.end)
+      : new Date(`${updatedData.endDate}T${updatedData.endTime}:00Z`);
 
-    startDate = new Date(`${updatedData.date}T${updatedData.startTime}:00`);
-    endDate = new Date(`${updatedData.endDate}T${updatedData.endTime}:00`);
-
-    startTimeStr = updatedData.startTime;
-    endTimeStr = updatedData.endTime;
+    const startTimeStr = updatedData.startTime || '00:00';
+    const endTimeStr = updatedData.endTime || '00:00';
     const updateData: any = {
       duration_1: updatedData.duration_1,
       duration_2: updatedData.duration_2,
       duration_3: updatedData.duration_3,
+      timezone: updatedData.timezone || "UTC",
       start_time: convertTimeStringToDate(startTimeStr),
       end_time: convertTimeStringToDate(endTimeStr),
       start_date: startDate,
-      end_date: endDate, 
+      end_date: endDate,
       updated_at: new Date(),
     };
 

@@ -28,70 +28,59 @@ export async function GET(req: Request) {
     }
     if (!resolvedTutorId) return NextResponse.json({ error: 'tutorId or email required' }, { status: 400 });
 
-    const weekly = await prisma.tutorAvailability.findMany({
-      where: { tutorId: resolvedTutorId, isActive: true },
-      select: { dayOfWeek: true, startTime: true, endTime: true, timezone: true },
-      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }]
-    });
-    const exceptions = await (prisma as any).tutorAvailabilityException.findMany({
-      where: { tutorId: resolvedTutorId },
-      select: { date: true, startTime: true, endTime: true, isActive: true, timezone: true },
+    const allSlots = await prisma.tutorAvailability.findMany({
+      where: { tutor_id: resolvedTutorId, is_active: true },
+      select: { day_of_week: true, start_time: true, end_time: true, timezone: true, start_date: true, end_date: true },
+      orderBy: [{ day_of_week: 'asc' }, { start_time: 'asc' }]
     });
 
-    const tz = weekly[0]?.timezone || (exceptions[0]?.timezone) || 'UTC';
+    const tz = allSlots[0]?.timezone || 'UTC';
     const today = new Date();
     const result: { date: string; slots: string[] }[] = [];
 
+    function expandSlot(w: { start_time: Date | null; end_time: Date | null }): string[] {
+      if (!w.start_time || !w.end_time) return [];
+      const start = toHHMM(w.start_time);
+      const end = toHHMM(w.end_time);
+      const out: string[] = [];
+      let [sh, sm] = start.split(':').map(Number);
+      const [eh, em] = end.split(':').map(Number);
+      for (let h=sh, m2=sm; (h<eh) || (h===eh && m2<em); ) {
+        out.push(`${String(h).padStart(2,'0')}:${String(m2).padStart(2,'0')}`);
+        m2 += 30; if (m2>=60) { m2-=60; h+=1; }
+      }
+      return out;
+    }
+
     for (let i=0; i<days; i++) {
       const dayDate = new Date(today.getTime() + i*86400000);
-      // Format date as YYYY-MM-DD in tz
       const y = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric' }).format(dayDate);
       const m = new Intl.DateTimeFormat('en-CA', { timeZone: tz, month: '2-digit' }).format(dayDate);
       const d = new Intl.DateTimeFormat('en-CA', { timeZone: tz, day: '2-digit' }).format(dayDate);
       const dateStr = `${y}-${m}-${d}`;
 
+      const dayStart = new Date(dayDate); dayStart.setHours(0,0,0,0);
+      const dayEnd = new Date(dayDate); dayEnd.setHours(23,59,59,999);
       const dow = parseISODate(dayDate, tz);
-      // Start with weekly slots
-      let slots = weekly.filter(w => w.dayOfWeek === dow)
-        .flatMap(w => {
-          const start = toHHMM(w.startTime);
-          const end = toHHMM(w.endTime);
-          const out: string[] = [];
-          // 30-min increments
-          let [sh, sm] = start.split(':').map(Number);
-          let [eh, em] = end.split(':').map(Number);
-          for (let h=sh, m=sm; (h<eh) || (h===eh && m<em); ) {
-            out.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
-            m += 30; if (m>=60) { m-=60; h+=1; }
-          }
-          return out;
-        });
 
-      // Apply exceptions for this date
-      const todaysEx = exceptions.filter((e: any) => new Intl.DateTimeFormat('en-CA', { timeZone: e.timezone || tz, year:'numeric', month:'2-digit', day:'2-digit' }).format(e.date) === dateStr);
-      if (todaysEx.length) {
-        // Remove and add
-        let set = new Set(slots);
-        for (const ex of todaysEx) {
-          const exStart = toHHMM(ex.startTime);
-          const exEnd = toHHMM(ex.endTime);
-          const buffer: string[] = [];
-          let [sh, sm] = exStart.split(':').map(Number);
-          let [eh, em] = exEnd.split(':').map(Number);
-          for (let h=sh, m=sm; (h<eh) || (h===eh && m<em); ) {
-            buffer.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`);
-            m += 30; if (m>=60) { m-=60; h+=1; }
-          }
-          if (ex.isActive) {
-            buffer.forEach(t => set.add(t));
-          } else {
-            buffer.forEach(t => set.delete(t));
-          }
+      const slotSet = new Set<string>();
+
+      for (const w of allSlots) {
+        let matches = false;
+        // Match by day_of_week (weekly recurring)
+        if (w.day_of_week != null && w.day_of_week === dow) {
+          matches = true;
         }
-        slots = Array.from(set).sort();
+        // Match by start_date/end_date range overlap
+        if (w.start_date && w.end_date && w.start_date <= dayEnd && w.end_date >= dayStart) {
+          matches = true;
+        }
+        if (matches) {
+          for (const s of expandSlot(w)) slotSet.add(s);
+        }
       }
 
-      result.push({ date: dateStr, slots });
+      result.push({ date: dateStr, slots: Array.from(slotSet).sort() });
     }
 
     return NextResponse.json({ timezone: tz, days: result });

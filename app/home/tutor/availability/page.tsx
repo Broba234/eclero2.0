@@ -91,7 +91,8 @@ export default function TutorAvailability() {
       </div>
     );
   }
-moment.tz.setDefault("Asia/Karachi"); // or your timezone
+const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+moment.tz.setDefault(userTimezone);
 
 const localizer = momentLocalizer(moment);
   return (

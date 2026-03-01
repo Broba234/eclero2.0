@@ -31,21 +31,19 @@ export async function POST(req: Request) {
     if (!resolvedTutorId) {
       return NextResponse.json({ error: "Could not resolve tutorId" }, { status: 400 });
     }
-const startDate = new Date(`${newEvent.startDate}T${newEvent.start_time}:00`);
-const endDate = new Date(`${newEvent.endDate}T${newEvent.end_time}:00`);
+// Use the pre-computed UTC ISO dates from the client (already timezone-correct)
+// newEvent.start / newEvent.end are ISO strings created in the user's browser timezone
+const tz = newEvent.timezone || "UTC";
+const startDate = newEvent.start ? new Date(newEvent.start) : new Date(`${newEvent.startDate}T${newEvent.start_time}:00Z`);
+const endDate = newEvent.end ? new Date(newEvent.end) : new Date(`${newEvent.endDate}T${newEvent.end_time}:00Z`);
 
         if (newEvent.subject_id.trim()) {
-      const existing = await prisma.profilesOnSubjects.findFirst({
-        where: {
-          profile_id: resolvedTutorId,
-          subject_id: newEvent.subject_id.trim()
-        }
-      });
         await prisma.tutorAvailability.create({
           data: {
             tutor_id: resolvedTutorId,
             subject_id: newEvent.subject_id.trim(),
             subject: newEvent.title,
+            timezone: tz,
             duration_1: newEvent.duration_1,
             duration_2: newEvent.duration_2,
             duration_3: newEvent.duration_3,

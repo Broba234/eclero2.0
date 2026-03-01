@@ -78,18 +78,17 @@ export default function StudentSessions() {
 
         if (data.success && data.sessions) {
           const formattedSessions: Session[] = data.sessions.map((session: any) => {
-            const sessionDate = new Date(session.created_at);
             return {
               id: session.id,
               tutorName: session.tutor?.name || 'Tutor',
               tutorAvatar: session.tutor?.avatar || undefined,
               subject: session.topic || 'Session',
-              date: sessionDate.toISOString().split('T')[0], // YYYY-MM-DD format
-              start_time: sessionDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+              date: session.date || new Date(session.created_at).toISOString().split('T')[0],
+              start_time: session.start_time || '',
               status: session.status === 'in_progress' ? 'active' :
                     session.status === 'completed' ? 'completed' : 'pending',
-              duration: session.duration || 60, // Use actual duration or default
-              price: session.tutor?.hourlyRate || 0, // Use actual tutor rate or 0
+              duration: session.duration || 60,
+              price: session.amount || session.tutor?.hourlyRate || 0,
               meetingLink: session.room_name ? `session-${session.id}` : undefined,
               homework: session.homework || undefined,
               progress: session.notes || undefined,

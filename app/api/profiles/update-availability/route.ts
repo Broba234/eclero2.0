@@ -21,8 +21,8 @@ export async function PATCH(req: Request) {
       if (!profile) return NextResponse.json({ error: 'User not found' }, { status: 404 });
 
       const activeSlots = await prisma.tutorAvailability.findMany({
-        where: { tutorId: profile.id, isActive: true },
-        select: { dayOfWeek: true, startTime: true, endTime: true, timezone: true },
+        where: { tutor_id: profile.id, is_active: true },
+        select: { day_of_week: true, start_time: true, end_time: true, timezone: true },
       });
       if (activeSlots.length) {
         const tz = activeSlots[0].timezone || 'UTC';
@@ -32,7 +32,7 @@ export async function PATCH(req: Request) {
         const day = weekdayMap[(parts.weekday || 'Sun').slice(0,3)] ?? 0;
         const hm = `${parts.hour || '00'}:${parts.minute || '00'}`;
         const hhmm = (d: Date) => `${String(d.getUTCHours()).padStart(2,'0')}:${String(d.getUTCMinutes()).padStart(2,'0')}`;
-        const inSlot = activeSlots.some(s => s.dayOfWeek === day && hhmm(s.startTime) <= hm && hm < hhmm(s.endTime));
+        const inSlot = activeSlots.some(s => s.day_of_week === day && s.start_time && s.end_time && hhmm(s.start_time) <= hm && hm < hhmm(s.end_time));
         if (inSlot) {
           return NextResponse.json({
             error: 'You are currently scheduled to be active. To go offline now, adjust your calendar availability.',

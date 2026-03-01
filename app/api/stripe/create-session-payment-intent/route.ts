@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
         duration: duration ?? null,
         topic: topic || null,
         notes: notes || null,
-        date: date || new Date().toISOString(),
+        date: date || new Date().toISOString().split('T')[0],
         amount: Number(amount),
         status: "pending",
       })

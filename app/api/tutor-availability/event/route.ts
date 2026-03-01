@@ -10,14 +10,6 @@ export async function GET(request: Request) {
 const availability = await prisma.tutorAvailability.findUnique({
   where: { id },
   include: {
-    subjects: {
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        grade: true
-      }
-    },
     profileSubject: {
       select: {
         profile_id: true,
@@ -28,16 +20,29 @@ const availability = await prisma.tutorAvailability.findUnique({
         price_2: true,
         price_3: true,
         subject_id: true,
+        Subjects: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            grade: true,
+          }
+        }
       }
     }
   },
 });
-console.log(availability);
     if (!availability) {
       return new Response(JSON.stringify({ error: 'Event not found' }), { status: 404 });
     }
 
-    return new Response(JSON.stringify(availability), { status: 200 });
+    // Include subjects in the shape the frontend expects
+    const response = {
+      ...availability,
+      subjects: availability.profileSubject?.Subjects || null,
+    };
+
+    return new Response(JSON.stringify(response), { status: 200 });
   } catch (error: any) {
     console.error('[EVENT_GET] Error:', error);
     return new Response(JSON.stringify({

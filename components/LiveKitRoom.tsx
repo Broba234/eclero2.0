@@ -94,6 +94,29 @@ const LiveKitRoom: React.FC<LiveKitRoomProps> = ({
   );
 };
 
+/**
+ * Merge remote elements with local elements by ID.
+ * For elements that exist in both, the one with the higher version wins.
+ * This prevents full-scene replacement from destroying concurrent local edits.
+ */
+function mergeWithRemoteElements(localElements: any[], remoteElements: any[]): any[] {
+  const elementsMap = new Map<string, any>();
+
+  for (const el of localElements) {
+    if (el?.id) elementsMap.set(el.id, el);
+  }
+
+  for (const el of remoteElements) {
+    if (!el?.id) continue;
+    const existing = elementsMap.get(el.id);
+    if (!existing || (el.version ?? 0) >= (existing.version ?? 0)) {
+      elementsMap.set(el.id, el);
+    }
+  }
+
+  return Array.from(elementsMap.values());
+}
+
 function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; userRole: 'tutor' | 'student' }) {
   const [activeView, setActiveView] = useState('whiteboard');
   const [sharedFile, setSharedFile] = useState<{ url: string; name: string; type: string } | null>(null);
@@ -102,6 +125,7 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
   const pendingSceneRef = React.useRef<{ elements: any[]; files?: any } | null>(null);
   const requestedSceneRef = React.useRef(false);
   const [isExcalidrawReady, setIsExcalidrawReady] = useState(false);
+  const isApplyingRemoteRef = React.useRef(false);
 
   // Screen sharing state
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -129,13 +153,31 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
   const applyExcalidrawScene = useCallback(
     (scene: { elements: any[]; files?: any } | null | undefined) => {
       if (!scene || !scene.elements) return;
-      if (excalidrawRef.current?.updateScene) {
-        excalidrawRef.current.updateScene(scene);
+      const api = excalidrawRef.current;
+      if (api?.updateScene) {
+        isApplyingRemoteRef.current = true;
+
+        // Merge remote elements with local elements by ID instead of
+        // replacing the whole scene, so concurrent local edits survive.
+        const localElements = api.getSceneElements?.() || [];
+        const merged = mergeWithRemoteElements(localElements, scene.elements);
+        api.updateScene({ elements: merged });
+
+        // Files must be added via addFiles — updateScene ignores them.
+        if (scene.files && Object.keys(scene.files).length > 0) {
+          try {
+            api.addFiles?.(Object.values(scene.files));
+          } catch (e) {
+            console.error('Error adding remote files:', e);
+          }
+        }
+
+        isApplyingRemoteRef.current = false;
       } else {
         pendingSceneRef.current = scene;
       }
     },
-    [excalidrawRef],
+    [],
   );
 
   const getCleanElements = useCallback((elements: any[] | null | undefined) => {
@@ -171,20 +213,48 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
           try {
             const api = excalidrawRef.current;
             const elements = api?.getSceneElements?.() || [];
-            const files = api?.getFiles?.() || {};
 
-            const payload = {
-              elements,
-              files,
-            };
-
-            const response = {
+            // Send elements first (small, always succeeds), then files
+            // separately so large images don't block the state sync.
+            const stateResponse = {
               type: 'excalidraw_state',
-              payload,
+              payload: { elements },
             };
-            sendDataSafe(new TextEncoder().encode(JSON.stringify(response)));
+            sendDataSafe(new TextEncoder().encode(JSON.stringify(stateResponse)))
+              .then(() => {
+                const rawFiles = api?.getFiles?.() || {};
+                if (Object.keys(rawFiles).length === 0) return;
+                const safeFiles: Record<string, any> = {};
+                Object.entries(rawFiles as Record<string, any>).forEach(([id, file]) => {
+                  if (!file) return;
+                  safeFiles[id] = {
+                    id,
+                    dataURL: (file as any).dataURL,
+                    mimeType: (file as any).mimeType,
+                    created: (file as any).created,
+                    lastRetrieved: (file as any).lastRetrieved,
+                  };
+                });
+                const fileResponse = {
+                  type: 'excalidraw_files',
+                  payload: { files: safeFiles },
+                };
+                return sendDataSafe(new TextEncoder().encode(JSON.stringify(fileResponse)));
+              })
+              .catch((err) => console.error('Error sending state/files response:', err));
           } catch (error) {
             console.error('Error responding to excalidraw state request:', error);
+          }
+        } else if (message.type === 'excalidraw_files') {
+          // Dedicated file-data message (split from element updates so
+          // large images don't block drawing sync).
+          try {
+            const { files } = message.payload || {};
+            if (files && Object.keys(files).length > 0) {
+              excalidrawRef.current?.addFiles?.(Object.values(files));
+            }
+          } catch (error) {
+            console.error('Error adding received files:', error);
           }
         } else if (message.type === 'excalidraw_state') {
           try {
@@ -523,6 +593,7 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
               sendData={sendDataSafe}
               excalidrawRef={excalidrawRef}
               onReady={() => setIsExcalidrawReady(true)}
+              isApplyingRemoteRef={isApplyingRemoteRef}
             />
             <PointerOverlay
               excalidrawRef={excalidrawRef}
@@ -703,10 +774,12 @@ function ExcalidrawWhiteboard({
   sendData,
   excalidrawRef,
   onReady,
+  isApplyingRemoteRef,
 }: {
   sendData: (data: Uint8Array) => Promise<void>;
   excalidrawRef: React.MutableRefObject<any | null>;
   onReady?: () => void;
+  isApplyingRemoteRef: React.MutableRefObject<boolean>;
 }) {
   const lastSentVersion = React.useRef(0);
   const debounceRef = React.useRef<number | null>(null);
@@ -730,8 +803,15 @@ function ExcalidrawWhiteboard({
     return safeFiles;
   }, []);
 
+  // Track which file IDs have already been sent so we don't resend
+  // multi-MB base64 data on every keystroke.
+  const sentFileIdsRef = React.useRef(new Set<string>());
+
   const onChange = React.useCallback(
     (elements: any[], _appState: any, _filesFromCallback: any) => {
+      // Skip sending when we are applying a remote update — prevents echo loop
+      if (isApplyingRemoteRef.current) return;
+
       // Debounce + only send if changed
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
       debounceRef.current = window.setTimeout(async () => {
@@ -741,26 +821,45 @@ function ExcalidrawWhiteboard({
           if (version <= lastSentVersion.current) return;
           lastSentVersion.current = version;
 
-          // Always pull and sanitize the latest files map from the Excalidraw API
-          // so that we only send JSON-serializable data (id, dataURL, mimeType, ...).
+          // 1) Send elements WITHOUT files — this message stays small and
+          //    always succeeds even when the scene contains large images.
+          const elementMessage = {
+            type: 'excalidraw_update',
+            payload: { elements: allElements },
+          };
+          await sendData(new TextEncoder().encode(JSON.stringify(elementMessage)));
+
+          // 2) Send NEW files in a separate message so a large image
+          //    doesn't block element delivery.  Already-sent files are
+          //    skipped to avoid resending MB of data on every stroke.
           const api = excalidrawRef.current;
           const rawFiles = api?.getFiles?.() || {};
-          const files = sanitizeFilesForSending(rawFiles);
+          const newFileIds = Object.keys(rawFiles).filter(
+            (id) => !sentFileIdsRef.current.has(id),
+          );
 
-          const message = {
-            type: 'excalidraw_update',
-            payload: {
-              elements: allElements,
-              files,
-            },
-          };
-          await sendData(new TextEncoder().encode(JSON.stringify(message)));
+          if (newFileIds.length > 0) {
+            const newFiles = sanitizeFilesForSending(
+              Object.fromEntries(newFileIds.map((id) => [id, rawFiles[id]])),
+            );
+            const fileMessage = {
+              type: 'excalidraw_files',
+              payload: { files: newFiles },
+            };
+            try {
+              await sendData(new TextEncoder().encode(JSON.stringify(fileMessage)));
+              for (const id of newFileIds) sentFileIdsRef.current.add(id);
+            } catch (fileErr) {
+              // Don't mark as sent so we retry on the next change
+              console.error('Error sending file data (will retry):', fileErr);
+            }
+          }
         } catch (e) {
           console.error('Error broadcasting excalidraw update:', e);
         }
       }, 120);
     },
-    [sendData, sanitizeFilesForSending],
+    [sendData, sanitizeFilesForSending, isApplyingRemoteRef],
   );
 
   const handlePointerUpdate = React.useCallback(
