@@ -11,6 +11,7 @@ import {
   MapPin,
   Tag,
 } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseClient";
 
 interface EventDetailModalProps {
@@ -213,12 +214,12 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
     ).toDate();
 
     if (endDateTime <= startDateTime) {
-      alert("End time must be after start time");
+      toast.error("End time must be after start time");
       return;
     }
 
     if (!updateForm.subject_id) {
-      alert("Please select a subject");
+      toast.error("Please select a subject");
       return;
     }
     const subjectName = selectedSubject?.name || updateForm.subject;
@@ -259,7 +260,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
       if (!res.ok) {
         const errorData = await res.json();
-        alert(`Error updating event: ${errorData.error || "Unknown error"}`);
+        toast.error(`Error updating event: ${errorData.error || "Unknown error"}`);
         return;
       }
       onUpdate(event.id, {
@@ -272,7 +273,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
       onClose();
     } catch (error: any) {
       console.error("Error updating event:", error);
-      alert("Error updating event. Please try again.");
+      toast.error("Error updating event. Please try again.");
     }
   };
 
@@ -631,7 +632,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
 
                         if (!res.ok) {
                           const err = await res.json().catch(() => ({}));
-                          alert(
+                          toast.error(
                             `Error deleting event: ${
                               err.error || res.statusText
                             }`
@@ -643,7 +644,7 @@ export const EventDetailModal: React.FC<EventDetailModalProps> = ({
                         onClose();
                       } catch (e: any) {
                         console.error("Error deleting event:", e);
-                        alert("Error deleting event. Please try again.");
+                        toast.error("Error deleting event. Please try again.");
                       }
                     }}
                     className="px-5 py-2.5 bg-red-600 text-white rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"

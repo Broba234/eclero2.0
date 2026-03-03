@@ -1,4 +1,3 @@
-
 {
   "name": "eclero2.0",
   "version": "0.1.0",
@@ -43,6 +42,7 @@
     "react-icons": "^5.5.0",
     "react-scroll-parallax": "^3.4.5",
     "rimraf": "^6.1.2",
+    "sonner": "^2.0.7",
     "stripe": "^14.17.0",
     "sweetalert2": "^11.26.17",
     "tailwind-merge": "^3.4.0",

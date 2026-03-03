@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import SubjectSelectProfile from "@/components/ui/components/SubjectSelectProfile";
 import WizardTimeSlot from "@/components/ui/components/WizardTimeSlot";
 import { getCountryFromTimezone } from "@/lib/timezone-to-country";
+import { toast } from "sonner";
 import UpdateProfileTimeSlot from "@/components/ui/components/UpdateProfileTimeSlot";
 import Image from "next/image";
 export type Subjects = {
@@ -197,7 +198,7 @@ export default function TutorProfile() {
       setProfile({ ...profile, avatar: publicUrl });
     } catch (error: any) {
       console.error("Error uploading avatar:", error?.message || error);
-      alert("Failed to upload profile picture. Please try again.");
+      toast.error("Failed to upload profile picture. Please try again.");
     } finally {
       setAvatarUploading(false);
       // Allow re-selecting the same file
@@ -639,11 +640,11 @@ export default function TutorProfile() {
                     window.location.href = data.url;
                   } else {
                     setStripeLoading(false);
-                    alert(data.error || "Failed to connect Stripe");
+                    toast.error(data.error || "Failed to connect Stripe");
                   }
                 } catch {
                   setStripeLoading(false);
-                  alert("Failed to connect Stripe");
+                  toast.error("Failed to connect Stripe");
                 }
               }}
               disabled={stripeLoading}

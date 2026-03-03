@@ -64,17 +64,18 @@ export async function GET(req: Request) {
     
     // Fetch active slots
     const slots = await prisma.tutorAvailability.findMany({
-      where: { 
-        tutor_id: { in: tutorIds }, 
-        is_active: true 
+      where: {
+        tutor_id: { in: tutorIds },
+        is_active: true
       },
-      select: { 
-        tutor_id: true, 
-        subject_id: true, 
-        start_time: true, 
-        end_time: true, 
-        start_date: true, 
-        end_date: true 
+      select: {
+        tutor_id: true,
+        subject_id: true,
+        start_time: true,
+        end_time: true,
+        start_date: true,
+        end_date: true,
+        timezone: true,
       },
     });
     
@@ -87,9 +88,10 @@ export async function GET(req: Request) {
         end_time: Date | null;
         start_date: Date | null;
         end_date: Date | null;
+        timezone: string | null;
       }>
     >();
-    
+
     for (const slot of slots) {
       if (!slotsByTutorId.has(slot.tutor_id)) {
         slotsByTutorId.set(slot.tutor_id, []);
@@ -100,7 +102,27 @@ export async function GET(req: Request) {
         end_time: slot.end_time,
         start_date: slot.start_date,
         end_date: slot.end_date,
+        timezone: slot.timezone,
       });
+    }
+
+    // Derive primary timezone per tutor (most common timezone across their slots)
+    const timezonByTutorId = new Map<string, string>();
+    for (const [tutorId, tutorSlots] of slotsByTutorId) {
+      const tzCounts = new Map<string, number>();
+      for (const s of tutorSlots) {
+        const tz = s.timezone || "UTC";
+        tzCounts.set(tz, (tzCounts.get(tz) || 0) + 1);
+      }
+      let bestTz = "UTC";
+      let bestCount = 0;
+      for (const [tz, count] of tzCounts) {
+        if (count > bestCount) {
+          bestTz = tz;
+          bestCount = count;
+        }
+      }
+      timezonByTutorId.set(tutorId, bestTz);
     }
     
     // Process tutors with availability check
@@ -131,6 +153,7 @@ export async function GET(req: Request) {
         ...t,
         subjects,
         derivedActiveNow,
+        timezone: timezonByTutorId.get(t.id) || "UTC",
         availableSlots: todaysSlots // Return only today's slots instead of all slots
       };
     });

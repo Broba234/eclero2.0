@@ -6,6 +6,7 @@ import { DateRange } from "react-date-range";
 import { format } from "date-fns";
 import { BookOpen, CalendarIcon, Clock, DollarSign, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
 
 export interface EventFormData {
   id: string;
@@ -120,12 +121,12 @@ export const EventModal: React.FC<EventModalProps> = ({
     ).toDate();
 
     if (endDateTime <= startDateTime) {
-      alert("End time must be after start time");
+      toast.error("End time must be after start time");
       return;
     }
 
     if (!formData.subject) {
-      alert("Please select a subject");
+      toast.error("Please select a subject");
       return;
     }
     onSubmit({

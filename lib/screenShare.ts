@@ -1,16 +1,5 @@
 import { Room, Track } from 'livekit-client';
-
-// A simple placeholder for a toast notification. 
-// In a real app, you would replace this with a proper toast library like react-hot-toast.
-const toast = {
-    error: (message: string, title: string) => {
-        console.error(`[${title}] ${message}`);
-        alert(`[${title}] ${message}`);
-    },
-    success: (message: string, title: string) => {
-        console.log(`[${title}] ${message}`);
-    }
-};
+import { toast } from '@/lib/toast';
 
 /**
  * Safari browser information interface

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import SubjectSelector from "@/components/SubjectSelector";
 import Button from "@/components/ui/components/ui/button/Button";
+import { toast } from "sonner";
 
 export default function StudentProfile() {
   const [profile, setProfile] = useState<any>(null);
@@ -121,7 +122,7 @@ export default function StudentProfile() {
       setProfile({ ...profile, avatar: publicUrl });
     } catch (error: any) {
       console.error("Error uploading avatar:", error?.message || error);
-      alert("Failed to upload profile picture. Please try again.");
+      toast.error("Failed to upload profile picture. Please try again.");
     } finally {
       setAvatarUploading(false);
       // Allow re-selecting the same file

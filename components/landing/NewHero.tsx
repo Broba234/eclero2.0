@@ -2,9 +2,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Users, GraduationCap, ArrowRight, PlayCircle } from 'lucide-react';
+import StudentIllustration from './illustrations/StudentIllustration';
+import TutorIllustration from './illustrations/TutorIllustration';
 
 export default function NewHero() {
   const [activeSection, setActiveSection] = useState<'student' | 'tutor'>('student');
@@ -26,22 +27,28 @@ export default function NewHero() {
 
   return (
     <section className="relative min-h-[100dvh] overflow-hidden w-full bg-opacity-20 bg-gradient-to-br from-[#F8F8F8] via-[#EBF2FF] to-[#EBF2FF]">
-          {/* Background images - responsive sizing */}
-          <div className='absolute w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px] -top-10 sm:-top-16 lg:-top-20 left-0'>
-          <Image
-            src="/left-bg.png"
-            alt="Student learning"
-            className="object-contain opacity-70"
-            fill
-          />
+          {/* Decorative background shapes */}
+          <div className="absolute w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px] -top-10 sm:-top-16 lg:-top-20 left-0 opacity-30">
+            <svg viewBox="0 0 400 400" fill="none" className="w-full h-full">
+              <circle cx="200" cy="200" r="180" fill="url(#leftBlob)" />
+              <defs>
+                <radialGradient id="leftBlob" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#93c5fd" />
+                  <stop offset="100%" stopColor="#dbeafe" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+            </svg>
           </div>
-          <div className='absolute w-[200px] sm:w-[350px] md:w-[450px] lg:w-[600px] h-full z-0 top-0 bottom-0 -right-[60px] sm:-right-[80px] md:-right-[90px] lg:-right-[110px]'>
-          <Image
-            src="/right-bg.png"
-            alt="Student learning"
-            className="object-contain opacity-20"
-            fill
-          />
+          <div className="absolute w-[200px] sm:w-[350px] md:w-[450px] lg:w-[600px] h-full z-0 top-0 bottom-0 -right-[60px] sm:-right-[80px] md:-right-[90px] lg:-right-[110px] opacity-20">
+            <svg viewBox="0 0 400 600" fill="none" className="w-full h-full">
+              <ellipse cx="250" cy="300" rx="200" ry="280" fill="url(#rightBlob)" />
+              <defs>
+                <radialGradient id="rightBlob" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#a5b4fc" />
+                  <stop offset="100%" stopColor="#e0e7ff" stopOpacity="0" />
+                </radialGradient>
+              </defs>
+            </svg>
           </div>
       {/* Background Images that crossfade */}
       <div className="absolute inset-0 -z-10 overflow-hidden">
@@ -272,7 +279,7 @@ export default function NewHero() {
           {/* Visual Container - responsive height */}
           <div className="relative lg:col-span-1">
             <div className="relative h-[220px] sm:h-[300px] md:h-[400px] lg:h-[600px] w-full">
-              {/* Student Image Container */}
+              {/* Student Illustration */}
               <motion.div
                 initial={{ opacity: 1, scale: 1, x: 0 }}
                 animate={{
@@ -283,25 +290,10 @@ export default function NewHero() {
                 transition={{ duration: 0.8, ease: "easeInOut" }}
                 className="absolute inset-0"
               >
-                <div className="relative h-full w-full">
-                  {/* Background shape */}
-                  <Image
-                    src="/student-bg.png"
-                    alt="Student background"
-                    fill
-                    className="object-contain"
-                  />
-                  {/* Foreground learner image */}
-                  <Image
-                    src="/learner.png"
-                    alt="Student"
-                    fill
-                    className="object-contain z-10"
-                  />
-                </div>
+                <StudentIllustration />
               </motion.div>
 
-              {/* Tutor Image Container */}
+              {/* Tutor Illustration */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, x: 50 }}
                 animate={{
@@ -312,24 +304,7 @@ export default function NewHero() {
                 transition={{ duration: 0.8, ease: "easeInOut" }}
                 className="absolute inset-0"
               >
-                <div className="relative h-full w-full">
-                     {/* Background shape */}
-                  <div className='relative h-full w-full'>
-                  <Image
-                    src="/tutor-bg.png"
-                    alt="Student background"
-                    fill
-                    className="object-contain opacity-50"
-                  />
-                  </div>
-                  {/* Foreground tutor image */}
-                  <Image
-                    src="/tutor.png"
-                    alt="Tutor"
-                    fill
-                    className="object-contain z-10"
-                  />
-                </div>
+                <TutorIllustration />
               </motion.div>
             </div>
           </div>

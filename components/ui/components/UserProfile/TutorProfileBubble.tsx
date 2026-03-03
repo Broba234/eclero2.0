@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import {
@@ -408,14 +409,14 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
 
   const handleConfirm = async () => {
     if (!tutor || !userId || !selectedTime) {
-      alert("Please select a time slot");
+      toast.error("Please select a time slot");
       return;
     }
 
     const amount =
       getSessionPrice(String(selectedDuration)) ?? Number(selectedDuration);
     if (typeof amount !== "number" || amount <= 0) {
-      alert("Invalid session price");
+      toast.error("Invalid session price");
       return;
     }
 
@@ -448,7 +449,7 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
       const data = await res.json();
 
       if (!res.ok) {
-        alert(data.error || "Failed to create payment");
+        toast.error(data.error || "Failed to create payment");
         setPaymentLoading(false);
         return;
       }
@@ -458,14 +459,14 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
       setStep(2);
     } catch (err) {
       console.error("Payment intent error:", err);
-      alert("An error occurred. Please try again.");
+      toast.error("An error occurred. Please try again.");
     } finally {
       setPaymentLoading(false);
     }
   };
 
   const handlePaymentSuccess = () => {
-    alert(`Session successfully booked with ${tutor.name}! Payment complete.`);
+    toast.success(`Session successfully booked with ${tutor.name}! Payment complete.`);
     setStep(1);
     setClientSecret(null);
     setSessionId(null);

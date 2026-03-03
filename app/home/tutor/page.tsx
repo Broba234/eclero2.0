@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import Modal from "@/components/Modal/Modal";
 import SetupWizard from "@/components/ui/SetupWizard";
 import { AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
 type Stats = {
   totalSessions: number;
@@ -181,7 +182,7 @@ export default function TutorHome() {
           const parsed = JSON.parse(errorText);
           message = parsed.error || message;
         } catch {}
-        alert(message);
+        toast.error(message);
       }
     } catch (error) {
     } finally {

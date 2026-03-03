@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabaseClient";
 import { TutorProfileModalContext } from "@/components/ui/components/common/TutorProfileModalContext";
 import { FilterModal } from "@/components/FilterModal";
 import DOMPurify from "dompurify";
+import { toast } from "sonner";
 import {
   SlidersHorizontal,
   X,
@@ -13,6 +14,7 @@ import {
   GraduationCap,
   Search,
   Users,
+  Globe,
 } from "lucide-react";
 
 export type Subjects = {
@@ -51,11 +53,12 @@ type Tutor = {
   isAvailableNow?: boolean | null;
   derivedActiveNow?: boolean;
   education?: string | null;
+  timezone?: string | null;
   subjects: Subjects[];
   availableSlots?: AvailableSlot[];
 };
 
-// ─── Tutor Card ───────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 const toSlotMinutes = (value?: string | Date | null): number | null => {
   if (!value) return null;
   if (typeof value === "string") {
@@ -68,7 +71,7 @@ const toSlotMinutes = (value?: string | Date | null): number | null => {
 };
 
 function countTimeSlots(availableSlots: AvailableSlot[]): number {
-  const SLOT_DURATION = 30; // smallest bookable duration in minutes
+  const SLOT_DURATION = 30;
   const unique = new Set<number>();
   for (const slot of availableSlots) {
     const start = toSlotMinutes(slot.start_time);
@@ -81,6 +84,40 @@ function countTimeSlots(availableSlots: AvailableSlot[]): number {
   return unique.size;
 }
 
+/** Format IANA timezone to readable label, e.g. "America/New_York" → "New York" */
+function formatTimezone(tz: string): string {
+  const city = tz.split("/").pop()?.replace(/_/g, " ") ?? tz;
+  return city;
+}
+
+/** Get current time in a given IANA timezone, e.g. "3:42 PM" */
+function currentTimeInTz(tz: string): string {
+  try {
+    return new Date().toLocaleTimeString("en-US", {
+      timeZone: tz,
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  } catch {
+    return "";
+  }
+}
+
+/** Get the lowest price across all subjects */
+function getStartingPrice(subjects: Subjects[]): number | null {
+  let min: number | null = null;
+  for (const s of subjects) {
+    for (const p of [s.price_1, s.price_2, s.price_3]) {
+      const n = typeof p === "string" ? parseFloat(p) : p;
+      if (typeof n === "number" && !isNaN(n) && (min === null || n < min))
+        min = n;
+    }
+  }
+  return min;
+}
+
+// ─── Tutor Card ───────────────────────────────────────────────────────────────
 const TutorCard = ({
   tutor,
   onBook,
@@ -89,55 +126,109 @@ const TutorCard = ({
   onBook: (tutor: Tutor) => void;
 }) => {
   const slotsToday = useMemo(
-    () => countTimeSlots(Array.isArray(tutor.availableSlots) ? tutor.availableSlots : []),
+    () =>
+      countTimeSlots(
+        Array.isArray(tutor.availableSlots) ? tutor.availableSlots : []
+      ),
     [tutor.availableSlots]
   );
+
   const educationHtml = tutor.education
     ? DOMPurify.sanitize(tutor.education.replace(/^"|"$/g, ""))
     : "";
 
+  const startingPrice = useMemo(
+    () => getStartingPrice(tutor.subjects ?? []),
+    [tutor.subjects]
+  );
+
+  const tzLabel = tutor.timezone ? formatTimezone(tutor.timezone) : null;
+  const tzTime = tutor.timezone ? currentTimeInTz(tutor.timezone) : null;
+
   return (
-    <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-200 transition-all duration-300 hover:shadow-lg overflow-hidden">
-      <div className="p-5">
-        <div className="flex gap-4">
+    <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-300 transition-all duration-300 hover:shadow-lg hover:shadow-blue-100/50 overflow-hidden">
+      <div className="p-5 sm:p-6">
+        <div className="flex gap-4 sm:gap-5">
           {/* Avatar */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex flex-col items-center gap-2">
             <div className="relative">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 p-0.5">
+              <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 p-0.5">
                 <img
                   src={tutor.avatar || "/default-avatar.png"}
                   alt={tutor.name || "Tutor"}
-                  className="w-full h-full rounded-full object-cover bg-gray-100"
+                  className="w-full h-full rounded-[14px] object-cover bg-gray-100"
                 />
               </div>
               {tutor.derivedActiveNow && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-[2.5px] border-white flex items-center justify-center">
+                  <div className="w-2 h-2 bg-white rounded-full" />
+                </div>
               )}
             </div>
+            {typeof tutor.rating === "number" && (
+              <div className="flex items-center gap-1">
+                <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                <span className="text-xs font-bold text-gray-700">
+                  {tutor.rating.toFixed(1)}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Info */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="text-base font-bold text-gray-900 truncate">
-                  {tutor.name}
-                </h3>
-                {educationHtml && (
-                  <div
-                    className="text-gray-500 text-sm mt-0.5 line-clamp-1"
-                    dangerouslySetInnerHTML={{ __html: educationHtml }}
-                  />
-                )}
-              </div>
+            {/* Name + status */}
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 truncate">
+                {tutor.name}
+              </h3>
+              {tutor.derivedActiveNow && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-green-50 text-green-700 text-[10px] font-semibold rounded-full border border-green-200 flex-shrink-0">
+                  <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                  Online
+                </span>
+              )}
+            </div>
 
-              {/* Rating */}
-              {typeof tutor.rating === "number" && (
-                <div className="flex items-center gap-1 flex-shrink-0 px-2 py-1 bg-amber-50 rounded-lg">
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                  <span className="text-sm font-semibold text-amber-700">
-                    {tutor.rating.toFixed(1)}
+            {/* Education */}
+            {educationHtml && (
+              <div
+                className="text-gray-500 text-sm line-clamp-1"
+                dangerouslySetInnerHTML={{ __html: educationHtml }}
+              />
+            )}
+
+            {/* Bio */}
+            {tutor.bio && (
+              <p className="text-gray-400 text-xs mt-1 line-clamp-2 sm:line-clamp-1">
+                {tutor.bio}
+              </p>
+            )}
+
+            {/* Timezone + Slots row */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-3">
+              {tzLabel && (
+                <div className="flex items-center gap-1.5 text-gray-500">
+                  <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="text-xs font-medium">{tzLabel}</span>
+                  {tzTime && (
+                    <span className="text-[10px] text-gray-400 font-medium">
+                      ({tzTime})
+                    </span>
+                  )}
+                </div>
+              )}
+              {slotsToday > 0 ? (
+                <div className="flex items-center gap-1.5 text-green-600">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium">
+                    {slotsToday} slot{slotsToday !== 1 ? "s" : ""} today
                   </span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 text-gray-400">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="text-xs font-medium">No slots today</span>
                 </div>
               )}
             </div>
@@ -147,44 +238,34 @@ const TutorCard = ({
               {tutor.subjects?.slice(0, 4).map((subject, idx) => (
                 <span
                   key={idx}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-md"
+                  className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 text-[11px] font-semibold rounded-lg"
                 >
                   {subject.name}
                 </span>
               ))}
               {tutor.subjects && tutor.subjects.length > 4 && (
-                <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs font-medium rounded-md">
-                  +{tutor.subjects.length - 4}
+                <span className="px-2.5 py-1 bg-gray-100 text-gray-500 text-[11px] font-semibold rounded-lg">
+                  +{tutor.subjects.length - 4} more
                 </span>
               )}
             </div>
 
-            {/* Bottom row */}
-            <div className="flex items-center justify-between mt-4">
-              <div className="flex items-center gap-4">
-                {slotsToday > 0 ? (
-                  <div className="flex items-center gap-1.5 text-green-700">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">
-                      {slotsToday} slot{slotsToday !== 1 ? "s" : ""} today
+            {/* Bottom row: price + book */}
+            <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
+              <div>
+                {startingPrice !== null && (
+                  <div className="text-sm">
+                    <span className="text-gray-400 text-xs">from </span>
+                    <span className="font-bold text-gray-900">
+                      ${startingPrice.toFixed(0)}
                     </span>
+                    <span className="text-gray-400 text-xs">/session</span>
                   </div>
-                ) : (
-                  <div className="flex items-center gap-1.5 text-gray-400">
-                    <Clock className="w-3.5 h-3.5" />
-                    <span className="text-xs font-medium">No slots today</span>
-                  </div>
-                )}
-                {tutor.bio && (
-                  <p className="text-xs text-gray-400 line-clamp-1 max-w-[200px] hidden md:block">
-                    {tutor.bio}
-                  </p>
                 )}
               </div>
-
               <button
                 onClick={() => onBook(tutor)}
-                className="px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md"
+                className="px-5 py-2.5 bg-gradient-to-r from-blue-500 to-indigo-600 text-white text-sm font-semibold rounded-xl hover:from-blue-600 hover:to-indigo-700 transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
               >
                 Book Session
               </button>
@@ -198,25 +279,29 @@ const TutorCard = ({
 
 // ─── Skeleton Card ────────────────────────────────────────────────────────────
 const SkeletonCard = () => (
-  <div className="bg-white rounded-2xl border border-gray-200 p-5 animate-pulse">
-    <div className="flex gap-4">
-      <div className="w-14 h-14 rounded-full bg-gray-200 flex-shrink-0" />
+  <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 animate-pulse">
+    <div className="flex gap-4 sm:gap-5">
+      <div className="flex flex-col items-center gap-2 flex-shrink-0">
+        <div className="w-16 h-16 sm:w-[72px] sm:h-[72px] rounded-2xl bg-gray-200" />
+        <div className="h-3 w-8 bg-gray-200 rounded" />
+      </div>
       <div className="flex-1 space-y-3">
-        <div className="flex justify-between">
-          <div className="space-y-2">
-            <div className="h-4 bg-gray-200 rounded w-32" />
-            <div className="h-3 bg-gray-200 rounded w-48" />
-          </div>
-          <div className="h-7 w-12 bg-gray-200 rounded-lg" />
+        <div className="space-y-1.5">
+          <div className="h-5 bg-gray-200 rounded w-36" />
+          <div className="h-3 bg-gray-200 rounded w-52" />
         </div>
-        <div className="flex gap-2">
-          <div className="h-5 bg-gray-200 rounded w-16" />
-          <div className="h-5 bg-gray-200 rounded w-20" />
-          <div className="h-5 bg-gray-200 rounded w-14" />
+        <div className="flex gap-3">
+          <div className="h-3 bg-gray-200 rounded w-24" />
+          <div className="h-3 bg-gray-200 rounded w-20" />
         </div>
-        <div className="flex justify-between items-center pt-1">
-          <div className="h-4 bg-gray-200 rounded w-24" />
-          <div className="h-9 bg-gray-200 rounded-xl w-28" />
+        <div className="flex gap-1.5">
+          <div className="h-6 bg-gray-200 rounded-lg w-16" />
+          <div className="h-6 bg-gray-200 rounded-lg w-20" />
+          <div className="h-6 bg-gray-200 rounded-lg w-14" />
+        </div>
+        <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+          <div className="h-4 bg-gray-200 rounded w-20" />
+          <div className="h-10 bg-gray-200 rounded-xl w-28" />
         </div>
       </div>
     </div>
@@ -298,7 +383,7 @@ export default function ExploreTutors() {
       })
         .then((res) => {
           if (res.ok) {
-            alert("Payment successful! Your session has been booked.");
+            toast.success("Payment successful! Your session has been booked.");
           } else {
             // Session may have already been confirmed
             console.warn("Could not confirm session after 3DS redirect");
@@ -308,7 +393,7 @@ export default function ExploreTutors() {
           console.error("Failed to confirm payment after redirect");
         });
     } else if (redirectStatus === "failed") {
-      alert("Payment was not completed. Please try booking again.");
+      toast.error("Payment was not completed. Please try booking again.");
     }
   }, []);
 

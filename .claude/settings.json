@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \":*)",
+      "Bash(node -e \"const p = require\\(''./package.json''\\); console.log\\(JSON.stringify\\({excalidraw: p.dependencies[''@excalidraw/excalidraw''], livekit_react: p.dependencies[''@livekit/components-react''], livekit_client: p.dependencies[''livekit-client''], livekit_core: p.dependencies[''@livekit/components-core'']}, null, 2\\)\\)\")",
+      "Bash(npx next build)",
+      "Bash(npx tsc --noEmit --pretty app/home/student/explore/page.tsx)",
+      "Bash(npx next lint --file app/home/student/explore/page.tsx)",
+      "Bash(npx next lint)",
+      "Bash(npx prisma:*)",
+      "Bash(1:*)"
+    ]
+  }
+}

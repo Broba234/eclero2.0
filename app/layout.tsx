@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata, Viewport } from 'next'
 import { Poppins } from 'next/font/google'
+import { Toaster } from 'sonner'
 
 const inter = Poppins({
   subsets: ['latin'],
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className={`bg-gray-900 overflow-x-hidden ${inter.className}`}>
         {children}
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   )

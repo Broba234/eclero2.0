@@ -8,6 +8,7 @@ import TutorProfileBubble from "@/components/ui/components/UserProfile/TutorProf
 
 
 import { TutorProfileModalContext } from "@/components/ui/components/common/TutorProfileModalContext";
+import { toast } from "sonner";
 
 export default function HomeLayout({
   children,
@@ -101,12 +102,12 @@ export default function HomeLayout({
         .then((res) => res.json())
         .then((data) => {
           if (data.success) {
-            alert("Payment successful! Your session has been booked.");
+            toast.success("Payment successful! Your session has been booked.");
           } else {
-            alert(data.error || "Payment confirmation failed.");
+            toast.error(data.error || "Payment confirmation failed.");
           }
         })
-        .catch(() => alert("Failed to confirm payment."))
+        .catch(() => toast.error("Failed to confirm payment."))
         .finally(() => {
           window.history.replaceState({}, "", window.location.pathname);
         });

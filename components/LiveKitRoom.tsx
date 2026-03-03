@@ -1,5 +1,6 @@
 'use client';
 
+import { toast } from 'sonner';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   LiveKitRoom as LKRoom,
@@ -125,7 +126,7 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
   const pendingSceneRef = React.useRef<{ elements: any[]; files?: any } | null>(null);
   const requestedSceneRef = React.useRef(false);
   const [isExcalidrawReady, setIsExcalidrawReady] = useState(false);
-  const isApplyingRemoteRef = React.useRef(false);
+  const lastRemoteApplyVersionRef = React.useRef(0);
 
   // Screen sharing state
   const [isScreenSharing, setIsScreenSharing] = useState(false);
@@ -155,13 +156,16 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
       if (!scene || !scene.elements) return;
       const api = excalidrawRef.current;
       if (api?.updateScene) {
-        isApplyingRemoteRef.current = true;
-
         // Merge remote elements with local elements by ID instead of
         // replacing the whole scene, so concurrent local edits survive.
         const localElements = api.getSceneElements?.() || [];
         const merged = mergeWithRemoteElements(localElements, scene.elements);
         api.updateScene({ elements: merged });
+
+        // Record the scene version AFTER applying remote update.
+        // onChange will compare against this to suppress echoes — this
+        // works regardless of whether onChange fires sync or async.
+        lastRemoteApplyVersionRef.current = getSceneVersion(merged as any);
 
         // Files must be added via addFiles — updateScene ignores them.
         if (scene.files && Object.keys(scene.files).length > 0) {
@@ -171,8 +175,6 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
             console.error('Error adding remote files:', e);
           }
         }
-
-        isApplyingRemoteRef.current = false;
       } else {
         pendingSceneRef.current = scene;
       }
@@ -185,13 +187,52 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
     return elements.filter((el: any) => !el.isDeleted);
   }, []);
 
+  // Store the latest data message handler in a ref so useDataChannel gets a
+  // stable callback identity.  This prevents send/isSending from being
+  // recreated on every render (which would cascade through sendDataSafe and
+  // into ExcalidrawWhiteboard's onChange).
+  const onDataMessageRef = React.useRef<(msg: any) => void>(() => {});
+
+  const stableOnDataMessage = useCallback((msg: any) => {
+    onDataMessageRef.current(msg);
+  }, []);
+
   const { send: sendData, isSending }: { send: (data: Uint8Array, options?: DataPublishOptions) => Promise<void>; isSending: boolean } = useDataChannel(
     'eclero-collaboration',
-    (msg: any) => {
-      console.log('MainContent: Raw message received:', msg);
+    stableOnDataMessage,
+  );
+
+  const sendDataSafe = useCallback(
+    async (payload: Uint8Array, options: DataPublishOptions = { reliable: true }) => {
+      const MAX_RETRIES = 1;
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          await sendData(payload, options);
+          setDataStats((prev) => ({ ...prev, sent: prev.sent + 1, lastError: '' }));
+          return;
+        } catch (error) {
+          if (attempt < MAX_RETRIES) {
+            await new Promise((r) => setTimeout(r, 50));
+            continue;
+          }
+          console.error('Data channel send error (after retry):', error);
+          setDataStats((prev) => ({
+            ...prev,
+            lastError: error instanceof Error ? error.message : 'Unknown send error',
+          }));
+        }
+      }
+    },
+    [sendData],
+  );
+
+  // Keep the data message handler ref up-to-date with the latest closures.
+  // By the time any network message arrives (always async), this ref will
+  // hold the correct handler with access to current sendDataSafe, etc.
+  useEffect(() => {
+    onDataMessageRef.current = (msg: any) => {
       try {
         const message = JSON.parse(new TextDecoder().decode(msg.payload));
-        console.log('MainContent: Parsed message received:', message);
         setDataStats((prev) => ({
           ...prev,
           received: prev.received + 1,
@@ -214,8 +255,6 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
             const api = excalidrawRef.current;
             const elements = api?.getSceneElements?.() || [];
 
-            // Send elements first (small, always succeeds), then files
-            // separately so large images don't block the state sync.
             const stateResponse = {
               type: 'excalidraw_state',
               payload: { elements },
@@ -246,8 +285,6 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
             console.error('Error responding to excalidraw state request:', error);
           }
         } else if (message.type === 'excalidraw_files') {
-          // Dedicated file-data message (split from element updates so
-          // large images don't block drawing sync).
           try {
             const { files } = message.payload || {};
             if (files && Object.keys(files).length > 0) {
@@ -273,7 +310,6 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
             }));
           }
         } else if (message.type === 'session_end') {
-          // Tutor has ended the session; disconnect this client.
           console.log('Session end signal received, disconnecting from room.');
           try {
             room?.disconnect();
@@ -284,24 +320,8 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
       } catch (e) {
         console.error('MainContent: Error parsing message:', e);
       }
-    },
-  );
-
-  const sendDataSafe = useCallback(
-    async (payload: Uint8Array, options: DataPublishOptions = { reliable: true }) => {
-      try {
-        await sendData(payload, options);
-        setDataStats((prev) => ({ ...prev, sent: prev.sent + 1, lastError: '' }));
-      } catch (error) {
-        console.error('Data channel send error:', error);
-        setDataStats((prev) => ({
-          ...prev,
-          lastError: error instanceof Error ? error.message : 'Unknown send error',
-        }));
-      }
-    },
-    [sendData],
-  );
+    };
+  }, [applyExcalidrawScene, sendDataSafe, room]);
 
   // Periodically prune stale remote pointers so we don't leak memory
   useEffect(() => {
@@ -528,6 +548,18 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
         .from('eclero-storage')
         .getPublicUrl(filePath);
 
+      // Non-blocking validation — warn the sender if the URL isn't accessible
+      // (e.g. Supabase bucket not set to public) but still share the file.
+      try {
+        const checkResponse = await fetch(publicUrl, { method: 'HEAD', mode: 'cors' });
+        if (!checkResponse.ok) {
+          console.warn(`File URL returned ${checkResponse.status}. The storage bucket may not be public.`);
+          toast.error('File uploaded but may not be viewable. Please check that your storage bucket is set to public.');
+        }
+      } catch (corsErr) {
+        console.warn('Could not validate file URL (CORS or network issue):', corsErr);
+      }
+
       const message = {
         type: 'file_share',
         payload: { url: publicUrl, name: file.name, type: file.type },
@@ -539,7 +571,7 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
 
     } catch (error: any) {
       console.error('Error uploading file:', error.message || error);
-      alert(`Failed to upload file: ${error.message || 'Unknown error'}. Please check your Supabase storage configuration and try again.`);
+      toast.error(`Failed to upload file: ${error.message || 'Unknown error'}. Please check your Supabase storage configuration and try again.`);
     }
   };
 
@@ -593,7 +625,7 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
               sendData={sendDataSafe}
               excalidrawRef={excalidrawRef}
               onReady={() => setIsExcalidrawReady(true)}
-              isApplyingRemoteRef={isApplyingRemoteRef}
+              lastRemoteApplyVersionRef={lastRemoteApplyVersionRef}
             />
             <PointerOverlay
               excalidrawRef={excalidrawRef}
@@ -774,12 +806,12 @@ function ExcalidrawWhiteboard({
   sendData,
   excalidrawRef,
   onReady,
-  isApplyingRemoteRef,
+  lastRemoteApplyVersionRef,
 }: {
   sendData: (data: Uint8Array) => Promise<void>;
   excalidrawRef: React.MutableRefObject<any | null>;
   onReady?: () => void;
-  isApplyingRemoteRef: React.MutableRefObject<boolean>;
+  lastRemoteApplyVersionRef: React.MutableRefObject<number>;
 }) {
   const lastSentVersion = React.useRef(0);
   const debounceRef = React.useRef<number | null>(null);
@@ -809,16 +841,21 @@ function ExcalidrawWhiteboard({
 
   const onChange = React.useCallback(
     (elements: any[], _appState: any, _filesFromCallback: any) => {
-      // Skip sending when we are applying a remote update — prevents echo loop
-      if (isApplyingRemoteRef.current) return;
-
       // Debounce + only send if changed
       if (debounceRef.current) window.clearTimeout(debounceRef.current);
       debounceRef.current = window.setTimeout(async () => {
         try {
           const allElements = elements || [];
           const version = getSceneVersion(allElements as any);
+
+          // Skip if version hasn't advanced past our last send
           if (version <= lastSentVersion.current) return;
+
+          // Skip if this version matches what we just applied from remote.
+          // This suppresses echoes regardless of whether onChange fires
+          // synchronously or asynchronously after updateScene.
+          if (version <= lastRemoteApplyVersionRef.current) return;
+
           lastSentVersion.current = version;
 
           // 1) Send elements WITHOUT files — this message stays small and
@@ -859,7 +896,7 @@ function ExcalidrawWhiteboard({
         }
       }, 120);
     },
-    [sendData, sanitizeFilesForSending, isApplyingRemoteRef],
+    [sendData, sanitizeFilesForSending, lastRemoteApplyVersionRef],
   );
 
   const handlePointerUpdate = React.useCallback(
@@ -899,6 +936,7 @@ function ExcalidrawWhiteboard({
             onChange(elements as any[], appState, files)
           }
           onPointerUpdate={handlePointerUpdate}
+          isCollaborating={true}
           theme="light"
           UIOptions={{ dockedSidebarBreakpoint: 0 }}
         />
@@ -1134,6 +1172,14 @@ function FileViewer({
   onClose?: () => void;
 }) {
   const isImage = file.type.startsWith('image/');
+  const [imageStatus, setImageStatus] = React.useState<'loading' | 'loaded' | 'error'>('loading');
+  const [retryCount, setRetryCount] = React.useState(0);
+
+  React.useEffect(() => {
+    setImageStatus('loading');
+    setRetryCount(0);
+  }, [file.url]);
+
   return (
     <div className="w-full h-full relative flex items-center justify-center bg-gray-700">
       {onClose && (
@@ -1141,7 +1187,7 @@ function FileViewer({
           onClick={onClose}
           aria-label="Close file view"
           title="Close file view"
-          className="absolute top-4 right-4 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white shadow-lg"
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/60 hover:bg-black/80 text-white shadow-lg"
         >
           <svg
             className="w-4 h-4"
@@ -1157,11 +1203,47 @@ function FileViewer({
         </button>
       )}
       {isImage ? (
-        <img
-          src={file.url}
-          alt={file.name}
-          className="max-w-full max-h-full object-contain"
-        />
+        <>
+          {imageStatus === 'loading' && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white" />
+              <span className="ml-3 text-white text-sm">Loading image...</span>
+            </div>
+          )}
+          {imageStatus === 'error' && (
+            <div className="text-center text-white">
+              <p className="text-lg font-semibold mb-2">Failed to load image</p>
+              <p className="text-gray-300 text-sm mb-4">{file.name}</p>
+              {retryCount < 3 && (
+                <button
+                  onClick={() => {
+                    setRetryCount((c) => c + 1);
+                    setImageStatus('loading');
+                  }}
+                  className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2"
+                >
+                  Retry
+                </button>
+              )}
+              <a
+                href={file.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 inline-block"
+              >
+                Open in new tab
+              </a>
+            </div>
+          )}
+          <img
+            src={retryCount > 0 ? `${file.url}${file.url.includes('?') ? '&' : '?'}retry=${retryCount}` : file.url}
+            alt={file.name}
+            crossOrigin="anonymous"
+            className={`max-w-full max-h-full object-contain ${imageStatus !== 'loaded' ? 'hidden' : ''}`}
+            onLoad={() => setImageStatus('loaded')}
+            onError={() => setImageStatus('error')}
+          />
+        </>
       ) : (
         <div className="text-center text-white">
           <h3 className="text-2xl font-bold">{file.name}</h3>

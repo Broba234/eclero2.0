@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { WizardSubjectSelector } from "../WizardSubjectSelector";
@@ -726,11 +727,11 @@ const SetupWizard = () => {
                                     window.location.href = data.url;
                                   } else {
                                     setStripeLoading(false);
-                                    alert(data.error || "Failed to open Stripe dashboard");
+                                    toast.error(data.error || "Failed to open Stripe dashboard");
                                   }
                                 } catch {
                                   setStripeLoading(false);
-                                  alert("Failed to open Stripe dashboard");
+                                  toast.error("Failed to open Stripe dashboard");
                                 }
                               }}
                               className="mt-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-green-800 bg-white border-2 border-green-300 hover:bg-green-50 hover:border-green-400 transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
@@ -783,11 +784,11 @@ const SetupWizard = () => {
                                     window.location.href = data.url;
                                   } else {
                                     setStripeLoading(false);
-                                    alert(data.error || "Failed to connect Stripe");
+                                    toast.error(data.error || "Failed to connect Stripe");
                                   }
                                 } catch {
                                   setStripeLoading(false);
-                                  alert("Failed to connect Stripe");
+                                  toast.error("Failed to connect Stripe");
                                 }
                               }}
                               className="mx-auto group relative flex items-center gap-4 px-6 py-4 rounded-full bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold text-lg shadow-lg hover:shadow-2xl transition-all duration-300 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed"
