@@ -627,6 +627,20 @@ enum oauth_response_type {
   @@schema("auth")
 }
 
+model Contacts {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String
+  subject    String
+  message    String
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)])
+  @@index([is_read])
+  @@schema("public")
+}
+
 enum one_time_token_type {
   confirmation_token
   reauthentication_token

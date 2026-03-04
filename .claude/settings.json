@@ -8,7 +8,14 @@
       "Bash(npx next lint --file app/home/student/explore/page.tsx)",
       "Bash(npx next lint)",
       "Bash(npx prisma:*)",
-      "Bash(1:*)"
+      "Bash(1:*)",
+      "Bash(ls -la /home/vertex/Projects/eclero2.0/app/\\\\\\(admin\\\\\\)/)",
+      "Bash(ls -la /home/vertex/Projects/eclero2.0/app/\\\\\\(admin\\\\\\)/dashboard/)",
+      "Bash(ls -la /home/vertex/Projects/eclero2.0/app/\\\\\\(admin\\\\\\)/dashboard/subjects/)",
+      "Bash(PGPASSWORD=Data4123Base psql -h db.pmcwccxmrcbyjmcmhsta.supabase.co -p 5432 -U postgres -d postgres -c \":*)",
+      "Bash(dpkg -l)",
+      "Bash(npx ts-node --skip-project -e \":*)",
+      "Bash(node scripts/create-contacts-table.mjs)"
     ]
   }
 }

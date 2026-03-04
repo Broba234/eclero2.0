@@ -1,7 +1,7 @@
 "use client";
 import { motion, useInView } from "framer-motion";
 import { useRef, useState } from "react";
-import { LuMail, LuMapPin, LuPhone, LuSend } from "react-icons/lu";
+import { LuMail, LuMapPin, LuPhone, LuSend, LuLoader, LuCircleCheck } from "react-icons/lu";
 
 export default function ContactSection() {
   const ref = useRef(null);
@@ -12,6 +12,9 @@ export default function ContactSection() {
     subject: "",
     message: "",
   });
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -19,10 +22,31 @@ export default function ContactSection() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: wire up form submission
-    console.log("Contact form submitted:", form);
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const response = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Something went wrong");
+      }
+
+      setSubmitted(true);
+      setForm({ name: "", email: "", subject: "", message: "" });
+      setTimeout(() => setSubmitted(false), 5000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send message");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const containerVariants = {
@@ -172,12 +196,35 @@ export default function ContactSection() {
               />
             </div>
 
+            {error && (
+              <div className="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm">
+                {error}
+              </div>
+            )}
+
+            {submitted && (
+              <div className="mb-4 rounded-lg bg-green-50 border border-green-200 text-green-700 px-4 py-3 text-sm flex items-center gap-2">
+                <LuCircleCheck className="h-4 w-4" />
+                Message sent successfully! We&apos;ll get back to you soon.
+              </div>
+            )}
+
             <button
               type="submit"
-              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full px-8 py-3 font-semibold hover:scale-105 shadow-lg transition-all duration-300"
+              disabled={submitting}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-full px-8 py-3 font-semibold hover:scale-105 shadow-lg transition-all duration-300 disabled:opacity-60 disabled:hover:scale-100 disabled:cursor-not-allowed"
             >
-              Send Message
-              <LuSend className="h-4 w-4" />
+              {submitting ? (
+                <>
+                  Sending...
+                  <LuLoader className="h-4 w-4 animate-spin" />
+                </>
+              ) : (
+                <>
+                  Send Message
+                  <LuSend className="h-4 w-4" />
+                </>
+              )}
             </button>
           </motion.form>
 

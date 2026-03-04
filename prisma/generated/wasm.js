@@ -477,6 +477,16 @@ exports.Prisma.TutorAvailabilityScalarFieldEnum = {
   duration_2: 'duration_2'
 };
 
+exports.Prisma.ContactsScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  email: 'email',
+  subject: 'subject',
+  message: 'message',
+  is_read: 'is_read',
+  created_at: 'created_at'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -585,7 +595,8 @@ exports.Prisma.ModelName = {
   ProfilesOnSubjects: 'ProfilesOnSubjects',
   Sessions: 'Sessions',
   Subjects: 'Subjects',
-  TutorAvailability: 'TutorAvailability'
+  TutorAvailability: 'TutorAvailability',
+  Contacts: 'Contacts'
 };
 
 /**

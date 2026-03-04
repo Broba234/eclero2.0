@@ -24,10 +24,49 @@ export default function HeaderSmooth() {
   });
 
   const pathname = usePathname();
+  const [activeSection, setActiveSection] = useState<string>('');
 
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false);
+  }, [pathname]);
+
+  // Track which section is in view on the landing page
+  useEffect(() => {
+    if (pathname !== '/') return;
+
+    const sectionIds = ['our-mission', 'contact'];
+    const observers: IntersectionObserver[] = [];
+
+    sectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setActiveSection(id);
+          }
+        },
+        { rootMargin: '-40% 0px -40% 0px', threshold: 0 }
+      );
+
+      observer.observe(el);
+      observers.push(observer);
+    });
+
+    // Reset to empty (Home) when scrolled to the very top
+    const handleScroll = () => {
+      if (window.scrollY < 200) {
+        setActiveSection('');
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+
+    return () => {
+      observers.forEach((o) => o.disconnect());
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, [pathname]);
 
   // Close mobile menu on escape key
@@ -52,10 +91,16 @@ export default function HeaderSmooth() {
   }, [isMobileMenuOpen]);
 
   const navItems = [
-    { label: 'Home', href: '/' },
-    { label: 'About', href: '/#our-mission' },
-    { label: 'Contact', href: '/contact' }
+    { label: 'Home', href: '/', sectionId: '' },
+    { label: 'About', href: '/#our-mission', sectionId: 'our-mission' },
+    { label: 'Contact', href: '/#contact', sectionId: 'contact' }
   ];
+
+  const isNavActive = (item: typeof navItems[number]) => {
+    if (pathname !== '/') return false;
+    if (item.sectionId === '') return activeSection === '';
+    return activeSection === item.sectionId;
+  };
 
   return (
     <>
@@ -134,7 +179,7 @@ export default function HeaderSmooth() {
                   <Link
                     key={item.label}
                     href={item.href}
-                    className={`hover:text-white transition-colors duration-200 font-medium px-3 lg:px-4 py-1 rounded-full hover:bg-white/10 whitespace-nowrap text-sm lg:text-base ${pathname === item.href ? 'bg-white/10 text-white' : 'text-gray-700/70'}`}
+                    className={`hover:text-white transition-colors duration-200 font-medium px-3 lg:px-4 py-1 rounded-full hover:bg-white/10 whitespace-nowrap text-sm lg:text-base ${isNavActive(item) ? 'bg-white/10 text-white' : 'text-gray-700/70'}`}
                   >
                     {item.label}
                   </Link>
@@ -215,8 +260,8 @@ export default function HeaderSmooth() {
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`block py-3 px-4 rounded-full text-lg font-medium transition-all ${pathname === item.href 
-                    ? 'bg-white/20 text-white' 
+                  className={`block py-3 px-4 rounded-full text-lg font-medium transition-all ${isNavActive(item)
+                    ? 'bg-white/20 text-white'
                     : 'text-gray-200 hover:bg-white/10 hover:text-white'
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
