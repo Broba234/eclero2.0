@@ -249,6 +249,9 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
         if (message.type === 'file_share') {
           setSharedFile(message.payload);
           setActiveView('file');
+        } else if (message.type === 'file_close') {
+          setSharedFile(null);
+          setActiveView('whiteboard');
         } else if (message.type === 'excalidraw_update') {
           try {
             const { elements = [], files } = message.payload || {};
@@ -642,7 +645,11 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
         {activeView === 'file' && sharedFile && (
           <FileViewer
             file={sharedFile}
-            onClose={() => setActiveView('whiteboard')}
+            onClose={() => {
+              setActiveView('whiteboard');
+              setSharedFile(null);
+              sendDataSafe(new TextEncoder().encode(JSON.stringify({ type: 'file_close' })));
+            }}
           />
         )}
         {activeView === 'screen' && screenTrackRef && <ScreenView trackRef={screenTrackRef} />}
