@@ -204,6 +204,9 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
 
   const sendDataSafe = useCallback(
     async (payload: Uint8Array, options: DataPublishOptions = { reliable: true }) => {
+      // Don't attempt to send if the room is disconnected
+      if (room?.state !== 'connected') return;
+
       const MAX_RETRIES = 1;
       for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
         try {
@@ -211,6 +214,9 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
           setDataStats((prev) => ({ ...prev, sent: prev.sent + 1, lastError: '' }));
           return;
         } catch (error) {
+          const msg = error instanceof Error ? error.message : '';
+          // Stop retrying if the connection is closed
+          if (msg.includes('closed') || msg.includes('disconnected') || room?.state !== 'connected') return;
           if (attempt < MAX_RETRIES) {
             await new Promise((r) => setTimeout(r, 50));
             continue;
@@ -218,12 +224,12 @@ function MainContent({ onDisconnect, userRole }: { onDisconnect?: () => void; us
           console.error('Data channel send error (after retry):', error);
           setDataStats((prev) => ({
             ...prev,
-            lastError: error instanceof Error ? error.message : 'Unknown send error',
+            lastError: msg || 'Unknown send error',
           }));
         }
       }
     },
-    [sendData],
+    [sendData, room],
   );
 
   // Keep the data message handler ref up-to-date with the latest closures.
