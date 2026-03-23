@@ -8,6 +8,30 @@ const nextConfig = {
   transpilePackages: ['@excalidraw/excalidraw'],
   // Add empty turbopack config to silence the error
   turbopack: {},
+  // Allow Excalidraw assets, Supabase storage, and inline data to work in production
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-eval' 'unsafe-inline' blob:",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "font-src 'self' data: https://fonts.gstatic.com https://unpkg.com",
+              "img-src 'self' blob: data: https://*.supabase.co https://unpkg.com",
+              "connect-src 'self' blob: data: https://*.supabase.co wss://*.supabase.co wss://*.livekit.cloud https://*.livekit.cloud https://unpkg.com",
+              "worker-src 'self' blob:",
+              "frame-src 'self' blob: https://*.supabase.co",
+              "media-src 'self' blob: https://*.supabase.co",
+            ].join('; '),
+          },
+        ],
+      },
+    ];
+  },
   webpack: (config, { isServer }) => {
     if (isServer) {
       config.ignoreWarnings = [

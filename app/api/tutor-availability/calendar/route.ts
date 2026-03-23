@@ -80,7 +80,14 @@ export async function GET(req: Request) {
         }
       }
 
-      result.push({ date: dateStr, slots: Array.from(slotSet).sort() });
+      // Filter out past slots for today
+      let slots = Array.from(slotSet).sort();
+      if (i === 0) {
+        const nowLocal = new Intl.DateTimeFormat('en-GB', { timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date());
+        slots = slots.filter(s => s > nowLocal);
+      }
+
+      result.push({ date: dateStr, slots });
     }
 
     return NextResponse.json({ timezone: tz, days: result });

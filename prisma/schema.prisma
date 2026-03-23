@@ -412,6 +412,8 @@ model users {
   oauth_consents              oauth_consents[]
   one_time_tokens             one_time_tokens[]
   sessions                    sessions[]
+  webauthn_challenges         webauthn_challenges[]
+  webauthn_credentials        webauthn_credentials[]
   Profiles                    Profiles?
 
   @@index([instance_id])
@@ -489,19 +491,20 @@ model Profiles {
 
 /// This model contains row level security and requires additional setup for migrations. Visit https://pris.ly/d/row-level-security for more info.
 model ProfilesOnSubjects {
-  profile_id String    @db.Uuid
-  subject_id String    @db.Uuid
-  created_at DateTime? @default(now()) @db.Timestamptz(6)
-  updated_at DateTime? @default(now()) @db.Timestamptz(6)
-  price_1    Float?
-  price_2    Float?
-  price_3    Float?    @default(1)
-  duration_3 Float?    @default(1.5)
-  duration_2 Float?    @default(1)
-  duration_1 Float?    @default(0.5)
-  Profiles           Profiles            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  Subjects           Subjects            @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  profile_id        String              @db.Uuid
+  subject_id        String              @db.Uuid
+  created_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  updated_at        DateTime?           @default(now()) @db.Timestamptz(6)
+  price_1           Float?
+  price_2           Float?
+  price_3           Float?              @default(1)
+  duration_3        Float?              @default(1.5)
+  duration_2        Float?              @default(1)
+  duration_1        Float?              @default(0.5)
+  Profiles          Profiles            @relation(fields: [profile_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  Subjects          Subjects            @relation(fields: [subject_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   TutorAvailability TutorAvailability[]
+
   @@id([profile_id, subject_id])
   @@schema("public")
 }
@@ -543,27 +546,128 @@ model Subjects {
 }
 
 model TutorAvailability {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  tutor_id    String    @db.Uuid
-  day_of_week Int?
-  start_time  DateTime? @db.Time(6)
-  end_time    DateTime? @db.Time(6)
-  timezone    String?   @default("UTC")
-  is_active   Boolean   @default(true)
-  created_at  DateTime  @default(now())
-  updated_at  DateTime  @default(now())
-  subject_id  String?   @db.Uuid
-  start_date  DateTime? @db.Timestamptz(6)
-  end_date    DateTime? @db.Timestamptz(6)
-  subject     String?
-  duration_3  Int?      @default(0) @db.SmallInt
-  duration_1  Int?      @default(0) @db.SmallInt
-  duration_2  Int?      @default(0) @db.SmallInt
-  tutor       Profiles  @relation(fields: [tutor_id], references: [id], onDelete: Cascade)
+  id             String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tutor_id       String              @db.Uuid
+  day_of_week    Int?
+  start_time     DateTime?           @db.Time(6)
+  end_time       DateTime?           @db.Time(6)
+  timezone       String?             @default("UTC")
+  is_active      Boolean             @default(true)
+  created_at     DateTime            @default(now())
+  updated_at     DateTime            @default(now())
+  subject_id     String?             @db.Uuid
+  start_date     DateTime?           @db.Timestamptz(6)
+  end_date       DateTime?           @db.Timestamptz(6)
+  subject        String?
+  duration_3     Int?                @default(0) @db.SmallInt
+  duration_1     Int?                @default(0) @db.SmallInt
+  duration_2     Int?                @default(0) @db.SmallInt
+  tutor          Profiles            @relation(fields: [tutor_id], references: [id], onDelete: Cascade)
   profileSubject ProfilesOnSubjects? @relation(fields: [tutor_id, subject_id], references: [profile_id, subject_id], onDelete: Cascade)
+
   @@index([day_of_week, start_time, end_time], map: "TutorAvailability_day_time_idx")
   @@index([tutor_id])
   @@schema("public")
+}
+
+model Notifications {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String   @db.Uuid
+  type       String
+  title      String
+  body       String
+  is_read    Boolean  @default(false)
+  session_id String?  @db.Uuid
+  actor_id   String?  @db.Uuid
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([user_id, is_read])
+  @@index([user_id, created_at(sort: Desc)])
+  @@schema("public")
+}
+
+model Contacts {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name       String
+  email      String
+  subject    String
+  message    String
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at(sort: Desc)])
+  @@index([is_read])
+  @@schema("public")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model custom_oauth_providers {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  provider_type         String
+  identifier            String    @unique
+  name                  String
+  client_id             String
+  client_secret         String
+  acceptable_client_ids String[]  @default([])
+  scopes                String[]  @default([])
+  pkce_enabled          Boolean   @default(true)
+  attribute_mapping     Json      @default("{}")
+  authorization_params  Json      @default("{}")
+  enabled               Boolean   @default(true)
+  email_optional        Boolean   @default(false)
+  issuer                String?
+  discovery_url         String?
+  skip_nonce_check      Boolean   @default(false)
+  cached_discovery      Json?
+  discovery_cached_at   DateTime? @db.Timestamptz(6)
+  authorization_url     String?
+  token_url             String?
+  userinfo_url          String?
+  jwks_uri              String?
+  created_at            DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([created_at])
+  @@index([enabled])
+  @@index([identifier])
+  @@index([provider_type])
+  @@schema("auth")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model webauthn_challenges {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id        String?  @db.Uuid
+  challenge_type String
+  session_data   Json
+  created_at     DateTime @default(now()) @db.Timestamptz(6)
+  expires_at     DateTime @db.Timestamptz(6)
+  users          users?   @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([expires_at])
+  @@index([user_id])
+  @@schema("auth")
+}
+
+model webauthn_credentials {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id          String    @db.Uuid
+  credential_id    Bytes     @unique
+  public_key       Bytes
+  attestation_type String    @default("")
+  aaguid           String?   @db.Uuid
+  sign_count       BigInt    @default(0)
+  transports       Json      @default("[]")
+  backup_eligible  Boolean   @default(false)
+  backed_up        Boolean   @default(false)
+  friendly_name    String    @default("")
+  created_at       DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at       DateTime  @default(now()) @db.Timestamptz(6)
+  last_used_at     DateTime? @db.Timestamptz(6)
+  users            users     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id])
+  @@schema("auth")
 }
 
 enum aal_level {
@@ -623,20 +727,6 @@ enum oauth_response_type {
   code
 
   @@schema("auth")
-}
-
-model Contacts {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name       String
-  email      String
-  subject    String
-  message    String
-  is_read    Boolean  @default(false)
-  created_at DateTime @default(now()) @db.Timestamptz(6)
-
-  @@index([created_at(sort: Desc)])
-  @@index([is_read])
-  @@schema("public")
 }
 
 enum one_time_token_type {

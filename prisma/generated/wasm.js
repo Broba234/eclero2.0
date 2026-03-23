@@ -477,6 +477,18 @@ exports.Prisma.TutorAvailabilityScalarFieldEnum = {
   duration_2: 'duration_2'
 };
 
+exports.Prisma.NotificationsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  type: 'type',
+  title: 'title',
+  body: 'body',
+  is_read: 'is_read',
+  session_id: 'session_id',
+  actor_id: 'actor_id',
+  created_at: 'created_at'
+};
+
 exports.Prisma.ContactsScalarFieldEnum = {
   id: 'id',
   name: 'name',
@@ -485,6 +497,59 @@ exports.Prisma.ContactsScalarFieldEnum = {
   message: 'message',
   is_read: 'is_read',
   created_at: 'created_at'
+};
+
+exports.Prisma.Custom_oauth_providersScalarFieldEnum = {
+  id: 'id',
+  provider_type: 'provider_type',
+  identifier: 'identifier',
+  name: 'name',
+  client_id: 'client_id',
+  client_secret: 'client_secret',
+  acceptable_client_ids: 'acceptable_client_ids',
+  scopes: 'scopes',
+  pkce_enabled: 'pkce_enabled',
+  attribute_mapping: 'attribute_mapping',
+  authorization_params: 'authorization_params',
+  enabled: 'enabled',
+  email_optional: 'email_optional',
+  issuer: 'issuer',
+  discovery_url: 'discovery_url',
+  skip_nonce_check: 'skip_nonce_check',
+  cached_discovery: 'cached_discovery',
+  discovery_cached_at: 'discovery_cached_at',
+  authorization_url: 'authorization_url',
+  token_url: 'token_url',
+  userinfo_url: 'userinfo_url',
+  jwks_uri: 'jwks_uri',
+  created_at: 'created_at',
+  updated_at: 'updated_at'
+};
+
+exports.Prisma.Webauthn_challengesScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  challenge_type: 'challenge_type',
+  session_data: 'session_data',
+  created_at: 'created_at',
+  expires_at: 'expires_at'
+};
+
+exports.Prisma.Webauthn_credentialsScalarFieldEnum = {
+  id: 'id',
+  user_id: 'user_id',
+  credential_id: 'credential_id',
+  public_key: 'public_key',
+  attestation_type: 'attestation_type',
+  aaguid: 'aaguid',
+  sign_count: 'sign_count',
+  transports: 'transports',
+  backup_eligible: 'backup_eligible',
+  backed_up: 'backed_up',
+  friendly_name: 'friendly_name',
+  created_at: 'created_at',
+  updated_at: 'updated_at',
+  last_used_at: 'last_used_at'
 };
 
 exports.Prisma.SortOrder = {
@@ -596,7 +661,11 @@ exports.Prisma.ModelName = {
   Sessions: 'Sessions',
   Subjects: 'Subjects',
   TutorAvailability: 'TutorAvailability',
-  Contacts: 'Contacts'
+  Notifications: 'Notifications',
+  Contacts: 'Contacts',
+  custom_oauth_providers: 'custom_oauth_providers',
+  webauthn_challenges: 'webauthn_challenges',
+  webauthn_credentials: 'webauthn_credentials'
 };
 
 /**

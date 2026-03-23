@@ -1172,6 +1172,7 @@ function FileViewer({
   onClose?: () => void;
 }) {
   const isImage = file.type.startsWith('image/');
+  const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
   const [imageStatus, setImageStatus] = React.useState<'loading' | 'loaded' | 'error'>('loading');
   const [retryCount, setRetryCount] = React.useState(0);
 
@@ -1244,6 +1245,13 @@ function FileViewer({
             onError={() => setImageStatus('error')}
           />
         </>
+      ) : isPdf ? (
+        <iframe
+          src={file.url}
+          title={file.name}
+          className="w-full h-full border-0"
+          allow="fullscreen"
+        />
       ) : (
         <div className="text-center text-white">
           <h3 className="text-2xl font-bold">{file.name}</h3>

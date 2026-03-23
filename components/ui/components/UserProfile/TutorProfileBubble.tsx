@@ -273,8 +273,19 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
     });
     if (slotMinutes.length === 0) return [];
 
+    // Filter out past slots when the selected date is today
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const isToday = selectedDateStr === todayStr;
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    const futureSlots = isToday
+      ? slotMinutes.filter((m) => m > nowMinutes)
+      : slotMinutes;
+    if (futureSlots.length === 0) return [];
+
     // Group consecutive 30-min slots into ranges, then generate bookable slots
-    const sorted = [...slotMinutes].sort((a, b) => a - b);
+    const sorted = [...futureSlots].sort((a, b) => a - b);
     const ranges: { start: number; end: number }[] = [];
     let rangeStart = sorted[0];
     let prev = sorted[0];
@@ -301,7 +312,7 @@ const TutorProfileBubble: React.FC<TutorProfileBubbleProps> = ({
       }
     }
     return result;
-  }, [selectedDuration, slotsForSelectedDate]);
+  }, [selectedDuration, slotsForSelectedDate, selectedDateStr]);
 
   const selectedTutorSubject = useMemo(() => {
     if (!Array.isArray(tutor.subjects) || tutor.subjects.length === 0) {

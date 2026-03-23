@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 export const runtime = 'nodejs';
 import { createClient } from '@supabase/supabase-js';
+import { notifySessionCreated } from '@/lib/notifications';
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,6 +16,14 @@ export async function POST(request: NextRequest) {
     
     if (!tutorId || !studentId) {
       return NextResponse.json({ error: 'Missing tutorId or studentId' }, { status: 400 });
+    }
+
+    // Reject sessions scheduled in the past
+    if (date && start_time) {
+      const sessionStart = new Date(`${date}T${start_time}`);
+      if (sessionStart < new Date()) {
+        return NextResponse.json({ error: 'Cannot book a session in the past' }, { status: 400 });
+      }
     }
 
 
@@ -40,8 +49,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create session', details: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    // Look up student name for the notification
+    const { data: studentProfile } = await supabase
+      .from('Profiles')
+      .select('name')
+      .eq('id', studentId)
+      .single();
+
+    await notifySessionCreated(supabase, {
+      tutorId,
+      studentId,
+      studentName: studentProfile?.name || 'A student',
+      topic: topic || undefined,
+      sessionId: data.id,
+    });
+
+    return NextResponse.json({
+      success: true,
       session: data
     });
   } catch (err) {

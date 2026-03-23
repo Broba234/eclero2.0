@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { notifySessionStatusChanged } from '@/lib/notifications';
 
 export async function PATCH(request: NextRequest) {
   try {
@@ -62,8 +63,32 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update session' }, { status: 500 });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    // Send notification for the status change
+    // Look up names for the notification text
+    const { data: tutorProfile } = await supabase
+      .from('Profiles')
+      .select('name')
+      .eq('id', session.tutor_id)
+      .single();
+
+    const { data: studentProfile } = await supabase
+      .from('Profiles')
+      .select('name')
+      .eq('id', session.student_id)
+      .single();
+
+    await notifySessionStatusChanged(supabase, {
+      sessionId,
+      status,
+      tutorId: session.tutor_id,
+      studentId: session.student_id,
+      actorUserId: userId,
+      tutorName: tutorProfile?.name || 'Your tutor',
+      studentName: studentProfile?.name || 'A student',
+    });
+
+    return NextResponse.json({
+      success: true,
       session: updatedSession
     });
   } catch (err) {
