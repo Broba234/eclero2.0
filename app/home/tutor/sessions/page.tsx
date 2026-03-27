@@ -21,7 +21,7 @@ interface SessionRequest {
 export default function InboxPage() {
   const router = useRouter();
   const [requests, setRequests] = useState<SessionRequest[]>([]);
-  const [filter, setFilter] = useState<'all' | 'pending' | 'in_progress' | 'completed'>('all');
+  const [filter, setFilter] = useState<'pending' | 'upcoming' | 'completed'>('pending');
   const [userInfo, setUserInfo] = useState<{ identity: string; name: string } | null>(null);
   const [userId, setUserId] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -149,9 +149,22 @@ export default function InboxPage() {
     cancelled:   { label: 'Cancelled',   bg: 'bg-gray-50   border-gray-200',  text: 'text-gray-500',   dot: 'bg-gray-400' },
   };
 
-  const filteredRequests = requests.filter(req => filter === 'all' || req.status === filter);
-  const pendingCount = requests.filter(r => r.status === 'pending').length;
-  const inProgressCount = requests.filter(r => r.status === 'in_progress').length;
+  const today = now.toISOString().split('T')[0];
+
+  const isUpcoming = (r: SessionRequest) =>
+    r.status === 'accepted' && now < new Date(`${r.date}T${r.start_time}`);
+
+  const isPendingToday = (r: SessionRequest) =>
+    r.status === 'pending' && r.date === today;
+
+  const filteredRequests = requests.filter(req => {
+    if (filter === 'pending') return isPendingToday(req);
+    if (filter === 'upcoming') return isUpcoming(req);
+    return req.status === 'completed';
+  });
+
+  const pendingCount = requests.filter(r => isPendingToday(r)).length;
+  const upcomingCount = requests.filter(r => isUpcoming(r)).length;
   const completedCount = requests.filter(r => r.status === 'completed').length;
 
   // ── Earnings sum from completed sessions ─────────────────
@@ -183,10 +196,10 @@ export default function InboxPage() {
         {/* ── Stat Cards ────────────────────────────── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
           {[
-            { label: 'Pending',     count: pendingCount,    color: 'text-amber-600',  iconBg: 'bg-amber-50',  icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
-            { label: 'In Progress', count: inProgressCount, color: 'text-blue-600',   iconBg: 'bg-blue-50',   icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
-            { label: 'Completed',   count: completedCount,  color: 'text-green-600',  iconBg: 'bg-green-50',  icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
-            { label: 'Earnings',    count: null,            color: 'text-emerald-600', iconBg: 'bg-emerald-50', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { label: 'Upcoming',    count: upcomingCount,   color: 'text-blue-600',    iconBg: 'bg-blue-50',    icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+            { label: 'Pending',     count: pendingCount,    color: 'text-amber-600',   iconBg: 'bg-amber-50',   icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { label: 'Completed',   count: completedCount,  color: 'text-green-600',   iconBg: 'bg-green-50',   icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' },
+            { label: 'Earnings',    count: null,            color: 'text-emerald-600',  iconBg: 'bg-emerald-50', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
           ].map(stat => (
             <div key={stat.label} className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
               <div className="flex items-center gap-3">
@@ -208,9 +221,9 @@ export default function InboxPage() {
 
         {/* ── Filters ───────────────────────────────── */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {(['all', 'pending', 'in_progress', 'completed'] as const).map(opt => {
-            const count = opt === 'pending' ? pendingCount : opt === 'in_progress' ? inProgressCount : opt === 'completed' ? completedCount : null;
-            const labels: Record<string, string> = { all: 'All', pending: 'Pending', in_progress: 'In Progress', completed: 'Completed' };
+          {(['pending', 'upcoming', 'completed'] as const).map(opt => {
+            const count = opt === 'upcoming' ? upcomingCount : opt === 'pending' ? pendingCount : completedCount;
+            const labels: Record<string, string> = { pending: 'Pending', upcoming: 'Upcoming', completed: 'Completed' };
             return (
               <button
                 key={opt}
@@ -247,15 +260,10 @@ export default function InboxPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-1">No {filter !== 'all' ? filter.replace('_', ' ') + ' ' : ''}sessions</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-1">No {filter} sessions</h3>
             <p className="text-gray-500 text-sm mb-4">
-              {filter === 'all' ? 'Session requests from students will appear here.' : 'No sessions match this filter.'}
+              No sessions match this filter.
             </p>
-            {filter !== 'all' && (
-              <button onClick={() => setFilter('all')} className="text-sm font-medium text-blue-600 hover:text-blue-700">
-                View all sessions
-              </button>
-            )}
           </div>
         ) : (
           <div className="space-y-3">

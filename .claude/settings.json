@@ -15,7 +15,15 @@
       "Bash(PGPASSWORD=Data4123Base psql -h db.pmcwccxmrcbyjmcmhsta.supabase.co -p 5432 -U postgres -d postgres -c \":*)",
       "Bash(dpkg -l)",
       "Bash(npx ts-node --skip-project -e \":*)",
-      "Bash(node scripts/create-contacts-table.mjs)"
+      "Bash(node scripts/create-contacts-table.mjs)",
+      "Bash(grep -r \"bucket\\\\|eclero-storage\\\\|SUPABASE\" /home/vertex/Projects/eclero2.0 --include=*.ts --include=*.tsx --include=*.js --include=*.json ! -path ./node_modules/* ! -path ./.next/*)",
+      "Bash(grep -r \"whiteboard\\\\|excalidraw\\\\|storage\\\\|upload\" /home/vertex/Projects/eclero2.0/prisma --include=*.prisma)",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\(''''scripts'''',{}\\), indent=2\\)\\)\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(git config:*)",
+      "Bash(git checkout:*)"
     ]
   }
 }
